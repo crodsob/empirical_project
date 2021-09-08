@@ -1,0 +1,3786 @@
+---
+title: "Data Analysis"
+author: '26820228'
+date: "10/08/2021"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+# **Information** #
+Please refer to 'Data Cleaning' script prior to accessing this script.
+
+# **Setup** #
+
+```{r setup}
+
+knitr::opts_chunk$set(echo = TRUE)
+require("knitr")
+opts_knit$set(root.dir = "~/Library/Mobile Documents/com~apple~CloudDocs/Documents/Uni/Masters/Empirical Project/Code/Empirical_Project")
+
+# turn off scientific notation
+options(scipen = 999)
+
+```
+
+### *Load Libraries* ###
+
+```{r set libraries}
+
+library("ggplot2") # for figures
+library("psych") # for Cronbach's alpha, for describe function
+library("ppcor") # for partial correlation p-values
+library("dplyr") # for mutate function
+library("ggpubr") # for qq-plots
+library("GGally") # for scatterplot matrix 
+library("effsize") # for calculation of effect size
+library("pwr") # for power calculation
+library("performance") # for assessing robustness of model
+library("effsize") # for eta squared
+library("reshape2") # for transforming data from wide to long format
+library("tidyverse") # for data cleaning 
+library("rstatix") # for ANOVA and ANCOVA
+library("gridExtra") # for grid.arrange function
+library("car") # for levene's test
+library("emmeans") # to obtain estimated marginal means
+
+```
+
+### *Set Working Directory* ###
+
+```{r set working directory}
+
+# please change this to your own working directory path
+setwd("~/Library/Mobile Documents/com~apple~CloudDocs/Documents/Uni/Masters/Empirical Project/Code/Empirical_Project")
+
+```
+
+### *Read in Data and Save Data to an Object* ###
+
+```{r read file and save data to an object}
+
+# please change this to however you have stored the data file 
+# reading in dataframe 2, as this is the one with exclusion of n = 5
+df <- read.csv(file = "data/cleaned/dataframe_2.csv", header = TRUE, na.strings = "NA")
+
+```
+
+### *Change Variable Classifications* ###
+
+```{r change variable classifications}
+
+# change variable classifications to meet requirements for later analyses
+# ensure IVs and categorical variables are factor variables
+# and DVs or continuous variables are numeric variables
+
+# participant id and demographics
+df$id <- factor(df$id)
+df$age <- as.numeric(df$age)
+df$sex <- factor(df$sex)
+df$ethnicity <- factor(df$ethnicity)
+df$sexual_orientation <- factor(df$sexual_orientation)
+
+# fixation count DVs
+df$acq_csp_fix_count <- as.numeric(df$acq_csp_fix_count)
+df$acq_csm_fix_count <- as.numeric(df$acq_csm_fix_count)
+df$ext_csp_fix_count <- as.numeric(df$ext_csp_fix_count)
+df$ext_csm_fix_count <- as.numeric(df$ext_csm_fix_count)
+df$e_ext_csp_fix_count <- as.numeric(df$e_ext_csp_fix_count)
+df$l_ext_csp_fix_count <- as.numeric(df$l_ext_csp_fix_count)
+df$e_ext_csm_fix_count <- as.numeric(df$e_ext_csm_fix_count)
+df$l_ext_csm_fix_count <- as.numeric(df$l_ext_csm_fix_count)
+
+# fixation duration DVs
+df$acq_csp_fix_duration <- as.numeric(df$acq_csp_fix_duration)
+df$acq_csm_fix_duration <- as.numeric(df$acq_csm_fix_duration)
+df$ext_csp_fix_duration <- as.numeric(df$ext_csp_fix_duration)
+df$ext_csm_fix_duration <- as.numeric(df$ext_csm_fix_duration)
+df$e_ext_csp_fix_duration <- as.numeric(df$e_ext_csp_fix_duration)
+df$l_ext_csp_fix_duration <- as.numeric(df$l_ext_csp_fix_duration)
+df$e_ext_csm_fix_duration <- as.numeric(df$e_ext_csm_fix_duration)
+df$l_ext_csm_fix_duration <- as.numeric(df$l_ext_csm_fix_duration)
+
+# saccade amplitude DVs
+df$acq_csp_sacc_amplitude <- as.numeric(df$acq_csp_sacc_amplitude)
+df$acq_csm_sacc_amplitude <- as.numeric(df$acq_csm_sacc_amplitude)
+df$ext_csp_sacc_amplitude <- as.numeric(df$ext_csp_sacc_amplitude)
+df$ext_csm_sacc_amplitude <- as.numeric(df$ext_csm_sacc_amplitude)
+df$e_ext_csp_sacc_amplitude <- as.numeric(df$e_ext_csp_sacc_amplitude)
+df$l_ext_csp_sacc_amplitude <- as.numeric(df$l_ext_csp_sacc_amplitude)
+df$e_ext_csm_sacc_amplitude <- as.numeric(df$e_ext_csm_sacc_amplitude)
+df$l_ext_csm_sacc_amplitude <- as.numeric(df$l_ext_csm_sacc_amplitude)
+
+```
+
+# **Internal Consistency of IUS and STICSA** #
+
+```{r internal consistency}
+
+## IUS total
+# compute & extract alpha value and save as an object
+alpha_ius <- psych::alpha(df[, c("ius_1", "ius_2", "ius_3", "ius_4",
+                                       "ius_5", "ius_6", "ius_7", "ius_8",
+                                       "ius_9", "ius_10", "ius_11", "ius_12",
+                                       "ius_13", "ius_14", "ius_15", "ius_16",
+                                       "ius_17", "ius_18", "ius_19", "ius_20", 
+                                       "ius_21", "ius_22", "ius_23", "ius_24",
+                                       "ius_25", "ius_26", "ius_27")])$total[1]
+
+## STICSA total
+# compute & extract alpha value and save as an object
+alpha_sticsa <- psych::alpha(df[, c("sticsa_1", "sticsa_2", "sticsa_3", "sticsa_4",
+                                       "sticsa_5", "sticsa_6", "sticsa_7", "sticsa_8",
+                                       "sticsa_9", "sticsa_10", "sticsa_11", "sticsa_12",
+                                       "sticsa_13", "sticsa_14", "sticsa_15", "sticsa_16",
+                                       "sticsa_17", "sticsa_18", "sticsa_19", "sticsa_20", 
+                                       "sticsa_21")])$total[1]
+
+# create table of both Crobach's alpha values
+cronbachs_alpha_questionnaires <- rbind(alpha_ius, alpha_sticsa)
+
+# clean up row and column names for easier interpretation
+rownames(cronbachs_alpha_questionnaires) <- c("IUS-27", "STICSA")
+colnames(cronbachs_alpha_questionnaires) <- "Cronbach's Alpha"
+
+# obtain Cronbach's alpha table
+cronbachs_alpha_questionnaires
+
+```
+
+# *Compute Questionnaire Totals* #
+
+```{r compute questionnaire total}
+
+#### IUS total
+# all items, no reverse scoring
+df$ius_total <- as.numeric(df$ius_1 + df$ius_2 + df$ius_3 + df$ius_4 + df$ius_5 + 
+                             df$ius_6 + df$ius_7 + df$ius_8 + df$ius_9 + 
+                             df$ius_10 + df$ius_11 + df$ius_12 + df$ius_13 + 
+                             df$ius_14 + df$ius_15 + df$ius_16 + df$ius_17 + 
+                             df$ius_18 + df$ius_19 + df$ius_20 + df$ius_21 + 
+                             df$ius_22 + df$ius_23 + df$ius_24 + df$ius_25 + 
+                             df$ius_26 + df$ius_27)
+
+#### STICSA total
+# all items, no reverse scoring
+df$sticsa_total <- as.numeric(df$sticsa_1 + df$sticsa_2 + df$sticsa_3 +
+                                df$sticsa_4 + df$sticsa_5 + df$sticsa_6 +
+                                df$sticsa_7 + df$sticsa_8 + df$sticsa_9 +
+                                df$sticsa_10 + df$sticsa_11 + df$sticsa_12 +
+                                df$sticsa_13 + df$sticsa_14 + df$sticsa_15 +
+                                df$sticsa_16 + df$sticsa_17 + df$sticsa_18 +
+                                df$sticsa_19 + df$sticsa_20 + df$sticsa_21)
+
+```
+
+# *Create High / Low IU Classifications* #
+
+```{r create variable to classify as high / low IU group}
+
+# compute variable classifying participants as high/ low IU on basis of median split, 
+# and store as factor
+df$iu_group <- factor(ifelse(df$ius_total >= 65, 1, -1))
+# high IU = 1
+# low IU = -1
+
+```
+
+# *Check Distribution and Range to Identify Extreme Scores and Potential Data Errors in Questionnaires* #
+
+## *For IUS 27 Total in Both Groups* ##
+
+```{r check IUS 27 total ditributions and range}
+
+# possible total scores for the IUS range from 27-135 
+
+########################## check distributions 
+hist_ius_total <- df %>%
+  ggplot(aes(ius_total, fill = iu_group)) +
+  geom_histogram(binwidth = 5, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(20, 140, 10)) +
+  labs(x = "IUS-27 Total", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram of IUS-27 Scores") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_ius_total
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_ius_total.png", 
+       plot = hist_ius_total, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+########################## check ranges
+range_ius_total <- by(df$ius_total, df$iu_group, range)
+range_ius_total 
+# for high IU: 65-125
+# for low IU: 32-64
+##### overall: all scores are in range of possible scores, no errors apparent
+
+```
+
+## *For STICSA Total in Both Groups* ##
+
+```{r check sticsa total ditributions and range}
+
+# possible total scores for the STICSA range from 21-84
+
+########################## check distributions 
+hist_sticsa_total <- df %>%
+  ggplot(aes(sticsa_total, fill = iu_group)) +
+  geom_histogram(binwidth = 5, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(20, 90, 10)) + 
+  labs(x = "STICSA Total", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram of STICSA Scores") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_sticsa_total
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_sticsa_total.png", 
+       plot = hist_sticsa_total, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+########################## check ranges
+range_sticsa_total <- by(df$sticsa_total, df$iu_group, range)
+range_sticsa_total 
+# for high IU: 30-69
+# for low IU: 22-57
+##### overall: all scores are in range of possible scores, no errors apparent
+
+```
+
+# **Compute Demographics** #
+
+```{r compute demogoraphics}
+
+#### for age
+# for all participants
+all_age_table <- 
+  describe(df[, "age"])
+
+# for high IU
+high_iu_age_table <- 
+  describe(df[df$iu_group =="1", "age"])
+
+# for low IU
+low_iu_age_table <- 
+  describe(df[df$iu_group =="-1", "age"])
+
+# combine in a table
+age_table <- rbind(all_age_table, high_iu_age_table, low_iu_age_table)
+
+# re-name rows for easier interpretation
+rownames(age_table) <- c("Age (All Participants","Age (High IU Group)", 
+                         "Age (Low IU Group)")
+
+### for sex 
+sex_table <- xtabs(~ iu_group + sex, data = df)
+sex_table <- prop.table(sex_table) %>%
+  round(digits = 4) * 100
+rownames(sex_table) <- c("Low IU", "High IU")
+sex_table
+
+### for sexual orientation
+sexual_orientation_table <- xtabs(~ iu_group + sexual_orientation, data = df)
+sexual_orientation_table <- prop.table(sexual_orientation_table) %>%
+  round(digits = 4) * 100
+rownames(sexual_orientation_table) <- c("Low IU", "High IU")
+sexual_orientation_table
+
+### for ethnicity
+ethnicity_table <- xtabs(~ iu_group + ethnicity, data = df)
+ethnicity_table <- prop.table(ethnicity_table) %>%
+  round(digits = 4) * 100
+rownames(ethnicity_table) <- c("Low IU", "High IU")
+ethnicity_table
+
+
+#### write each to csv 
+# age
+write.csv(age_table, file = "tables/demographics/age_table.csv",
+          row.names = TRUE)
+
+# ethnicity
+write.csv(ethnicity_table, file = "tables/demographics/ethnicity_table.csv",
+          row.names = TRUE)
+
+# sex
+write.csv(sex_table, file = "tables/demographics/sex_table.csv", 
+          row.names = TRUE)
+
+# sexual orientation
+write.csv(sexual_orientation_table, file = "tables/demographics/sexual_orientation_table.csv",
+          row.names = TRUE)
+
+```
+
+# *Check for Difference in Demographics Between Groups* #
+
+## *Check for Difference in Age Between Groups* ##
+
+```{r check for differences in age between groups}
+
+# t-test to check for intergroup differences in age
+
+# first check assumptions of t-test
+# plot data for both groups using QQ plot
+qqplot_age <- ggqqplot(df, x = "age",
+         color = "iu_group",
+         palette = c("#c45150", "#824372"),
+         title = "Q-Q Plot Age") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) 
+# inspect the QQ plots
+qqplot_age 
+
+# save plot to file
+ggsave(filename = "graphs/qqplots/qqplot_age.png", 
+       plot = qqplot_age, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+# check significance of data for both groups using Shapiro-Wilk Test
+shapiro_age <- by(df$age, df$iu_group, shapiro.test)
+shapiro_age
+# high IU: p-value < .05, data violate assumption of normality
+# low IU: p-value < .05, data violate assumption of normality
+
+## check assumption of homogeneity of variances using Bartlett Test ##
+bartlett_age <- bartlett.test(age ~ iu_group, data = df) 
+bartlett_age
+# p-value > .05, data meet assumption of equal variances
+
+## compute independent samples t.test ##
+# as data violate assumption of normality,
+# use non-parametric Mann Whitney U
+
+# compute t.test and assign values to an object
+age_groupdiff <- wilcox.test(age ~ iu_group, data = df, paired = FALSE)
+
+# obtain t.test values 
+age_groupdiff
+# p-value > .05, there is no statistical difference in age between groups
+
+```
+
+## *Check for Difference in Ethnicity Between Groups* ##
+
+```{r check for differences in ethnicity between groups}
+
+# compute chi-square of cross-tabulation and save as object 
+chi_ethnicity <- chisq.test(table(df$iu_group, df$ethnicity)) 
+
+# check assumption of chi-square
+chi_ethnicity$expected 
+# multiple cells with values less than 5, does not meet assumptions
+# and therefore requires Fisher's Exact Test
+
+# obtain statistic and df
+chi_ethnicity 
+
+# obtain corrected p-value 
+chi_ethnicity_pval <- fisher.test(df$iu_group, df$ethnicity) 
+chi_ethnicity_pval
+# p-value > .05, no evidence of statistical difference in ethnicity between groups
+
+```
+
+## *Check for Difference in Sex Between Groups* ##
+
+```{r check for differences in sex between groups}
+
+# compute chi-square of cross-tabulation and save as object 
+chi_sex <- chisq.test(table(df$iu_group, df$sex))
+
+# check assumption of chi-square
+chi_sex_expected <- chi_sex$expected 
+chi_sex_expected
+# no cells less than 5, meets assumptions 
+
+# obtain statistic, df and p-value
+chi_sex
+# p-value < .05, there appears to be a statistical difference in sex between groups
+
+# therefore, obtain observed values
+chi_sex_observed <- chi_sex$observed
+chi_sex_observed
+
+```
+
+## *Check for Difference in Sexual Orientation Between Groups* ##
+
+```{r check for differences in sexual orientation between groups}
+
+# compute chi-square of cross-tabulation and save as object 
+chi_sexual_orientation <- chisq.test(table(df$iu_group, df$sexual_orientation)) 
+
+# check assumption of chi-square
+chi_sexual_orientation$expected 
+# no cells with values less than 5, meets assumptions
+
+# obtain statistic and df
+chi_sexual_orientation 
+# p-value > .05, no evidence of statistical difference in sexual orientation between groups
+
+```
+
+# *Distribution Checks of Eye-Movement Variables* #
+
+## **Fixation Count** ##
+
+### *Acquisition CS+* ###
+
+```{r acquisition csp fixation count}
+
+hist_acq_csp_fix_count <- df %>%
+  ggplot(aes(acq_csp_fix_count, fill = iu_group)) +
+  geom_histogram(binwidth = 1, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 30, 5)) +
+  labs(x = "Fixation Count", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Acquisition CS+ Fixation Count") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_acq_csp_fix_count
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_acq_csp_fix_count.png", 
+       plot = hist_acq_csp_fix_count, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Acquisition CS-* ###
+
+```{r acquisition csm fixation count}
+
+hist_acq_csm_fix_count <- df %>%
+  ggplot(aes(acq_csm_fix_count, fill = iu_group)) +
+  geom_histogram(binwidth = 1, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 30, 5)) +
+  labs(x = "Fixation Count", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Acquisition CS- Fixation Count") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_acq_csm_fix_count
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_acq_csm_fix_count.png", 
+       plot = hist_acq_csm_fix_count, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+# combine acquisition fixation count graphs
+hists_acq_fix_count <- 
+  grid.arrange(hist_acq_csp_fix_count, hist_acq_csm_fix_count,
+             ncol =2)
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hists_acq_fix_count.png", 
+       plot = hists_acq_fix_count, 
+       width = 30, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Early Extinction CS+* ###
+
+```{r early extinction csp fixation count}
+
+hist_e_ext_csp_fix_count <- df %>%
+  ggplot(aes(e_ext_csp_fix_count, fill = iu_group)) +
+  geom_histogram(binwidth = 1, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 30, 5)) +
+  labs(x = "Fixation Count", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Early Extinction CS+ Fixation Count") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_e_ext_csp_fix_count
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_e_ext_csp_fix_count.png", 
+       plot = hist_e_ext_csp_fix_count, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Early Extinction CS-* ###
+
+```{r early extinction csm fixation count}
+
+hist_e_ext_csm_fix_count <- df %>%
+  ggplot(aes(e_ext_csm_fix_count, fill = iu_group)) +
+  geom_histogram(binwidth = 1, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 30, 5)) +
+  labs(x = "Fixation Count", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Early Extinction CS- Fixation Count") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_e_ext_csm_fix_count
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_e_ext_csm_fix_count.png", 
+       plot = hist_e_ext_csm_fix_count, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Late Extinction CS+* ###
+
+```{r late extinction csp fixation count}
+
+hist_l_ext_csp_fix_count <- df %>%
+  ggplot(aes(l_ext_csp_fix_count, fill = iu_group)) +
+  geom_histogram(binwidth = 1, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 30, 5)) +
+  labs(x = "Fixation Count", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Late Extinction CS+ Fixation Count") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_l_ext_csp_fix_count
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_l_ext_csp_fix_count.png", 
+       plot = hist_l_ext_csp_fix_count, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Late Extinction CS-* ###
+
+```{r late extinction csm fixation count}
+
+hist_l_ext_csm_fix_count <- df %>%
+  ggplot(aes(l_ext_csm_fix_count, fill = iu_group)) +
+  geom_histogram(binwidth = 1, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 30, 5)) +
+  labs(x = "Fixation Count", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Late Extinction CS- Fixation Count") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_l_ext_csm_fix_count
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_l_ext_csm_fix_count.png", 
+       plot = hist_l_ext_csm_fix_count, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+# combine extinction fixation count graphs
+hists_ext_fix_count <- 
+  grid.arrange(hist_e_ext_csp_fix_count, hist_e_ext_csm_fix_count,
+               hist_l_ext_csp_fix_count, hist_l_ext_csm_fix_count,
+             ncol =2)
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hists_ext_fix_count.png", 
+       plot = hists_ext_fix_count, 
+       width = 30, 
+       height = 20, 
+       dpi = 300, 
+       units = "cm")
+
+```
+## **Fixation Duration** ##
+
+### *Acquisition CS+* ###
+
+```{r acquisition csp fixation duration}
+
+hist_acq_csp_fix_duration <- df %>%
+  ggplot(aes(acq_csp_fix_duration, fill = iu_group)) +
+  geom_histogram(binwidth = 220, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 6000, 1000)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Acquisition CS+ Fixation Duration") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_acq_csp_fix_duration
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_acq_csp_fix_duration.png", 
+       plot = hist_acq_csp_fix_duration, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Acquisition CS-* ###
+
+```{r acquisition csm fixation duration}
+
+hist_acq_csm_fix_duration <- df %>%
+  ggplot(aes(acq_csm_fix_duration, fill = iu_group)) +
+  geom_histogram(binwidth = 220, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 6000, 1000)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Acquisition CS- Fixation Duration") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_acq_csm_fix_duration
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_acq_csm_fix_duration.png", 
+       plot = hist_acq_csm_fix_duration, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+# combine acquisition fixation duration graphs
+hists_acq_fix_duration <- 
+  grid.arrange(hist_acq_csp_fix_duration, hist_acq_csm_fix_duration,
+             ncol =2)
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hists_acq_fix_duration.png", 
+       plot = hists_acq_fix_duration, 
+       width = 30, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Early Extinction CS+* ###
+
+```{r early extinction csp fixation duration}
+
+hist_e_ext_csp_fix_duration <- df %>%
+  ggplot(aes(e_ext_csp_fix_duration, fill = iu_group)) +
+  geom_histogram(binwidth = 220, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 6000, 1000)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Early Extinction CS+ Fixation Duration") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_e_ext_csp_fix_duration
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_e_ext_csp_fix_duration.png", 
+       plot = hist_e_ext_csp_fix_duration, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Early Extinction CS-* ###
+
+```{r early extinction csm fixation duration}
+
+hist_e_ext_csm_fix_duration <- df %>%
+  ggplot(aes(e_ext_csm_fix_duration, fill = iu_group)) +
+  geom_histogram(binwidth = 220, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 6000, 1000)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Early Extinction CS- Fixation Duration") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_e_ext_csm_fix_duration
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_e_ext_csm_fix_duration.png", 
+       plot = hist_e_ext_csm_fix_duration, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Late Extinction CS+* ###
+
+```{r late extinction csp fixation duration}
+
+hist_l_ext_csp_fix_duration <- df %>%
+  ggplot(aes(l_ext_csp_fix_duration, fill = iu_group)) +
+  geom_histogram(binwidth = 220, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 6000, 1000)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Late Extinction CS+ Fixation Duration") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_l_ext_csp_fix_duration
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_l_ext_csp_fix_duration.png", 
+       plot = hist_l_ext_csp_fix_duration, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Late Extinction CS-* ###
+
+```{r late extinction csm fixation duration}
+
+hist_l_ext_csm_fix_duration <- df %>%
+  ggplot(aes(l_ext_csm_fix_duration, fill = iu_group)) +
+  geom_histogram(binwidth = 220, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 6000, 1000)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Late Extinction CS- Fixation Duration") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_l_ext_csm_fix_duration
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_l_ext_csm_fix_duration.png", 
+       plot = hist_l_ext_csm_fix_duration, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+# combine extinction fixation duration graphs
+hists_ext_fix_duration <- 
+  grid.arrange(hist_e_ext_csp_fix_duration, hist_e_ext_csm_fix_duration,
+               hist_l_ext_csp_fix_duration, hist_l_ext_csm_fix_duration,
+             ncol =2)
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hists_ext_fix_duration.png", 
+       plot = hists_ext_fix_duration, 
+       width = 30, 
+       height = 20, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+## **Saccade Amplitude** ##
+
+### *Acquisition CS+* ###
+
+```{r acquisition csp saccade amplitude}
+
+hist_acq_csp_sacc_amplitude <- df %>%
+  ggplot(aes(acq_csp_sacc_amplitude, fill = iu_group)) +
+  geom_histogram(binwidth = .5, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 10, 2)) +
+  labs(x = "Saccade Amplitude (deg/ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Acquisition CS+ Saccade Amplitude") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_acq_csp_sacc_amplitude
+
+ggsave(filename = "graphs/histograms/hist_acq_csp_sacc_amplitude.png", 
+       plot = hist_acq_csp_sacc_amplitude, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Acquisition CS-* ###
+
+```{r acquisition csm saccade amplitude}
+
+hist_acq_csm_sacc_amplitude <- df %>%
+  ggplot(aes(acq_csm_sacc_amplitude, fill = iu_group)) +
+  geom_histogram(binwidth = .5, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 10, 2)) +
+  labs(x = "Saccade Amplitude (deg/ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Acquisition CS- Saccade Amplitude") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_acq_csm_sacc_amplitude
+
+ggsave(filename = "graphs/histograms/hist_acq_csm_sacc_amplitude.png", 
+       plot = hist_acq_csm_sacc_amplitude, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+# combine acquisition saccade amplitude graphs
+hists_acq_sacc_amplitude <- 
+  grid.arrange(hist_acq_csp_sacc_amplitude, hist_acq_csm_sacc_amplitude,
+             ncol =2)
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hists_acq_sacc_amplitude.png", 
+       plot = hists_acq_sacc_amplitude, 
+       width = 30, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Early Extinction CS+* ###
+
+```{r early extinction csp saccade amplitude}
+
+hist_e_ext_csp_sacc_amplitude <- df %>%
+  ggplot(aes(e_ext_csp_sacc_amplitude, fill = iu_group)) +
+  geom_histogram(binwidth = .5, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 14, 2)) +
+  labs(x = "Saccade Amplitude (deg/ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Early Extinction CS+ Saccade Amplitude") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_e_ext_csp_sacc_amplitude
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_e_ext_csp_sacc_amplitude.png", 
+       plot = hist_e_ext_csp_sacc_amplitude, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Early Extinction CS-* ###
+
+```{r early extinction csm saccade amplitude}
+
+hist_e_ext_csm_sacc_amplitude <- df %>%
+  ggplot(aes(e_ext_csm_sacc_amplitude, fill = iu_group)) +
+  geom_histogram(binwidth = .5, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 14, 2)) +
+  labs(x = "Saccade Amplitude (deg/ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Early Extinction CS- Saccade Amplitude") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_e_ext_csm_sacc_amplitude
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_e_ext_csm_sacc_amplitude.png", 
+       plot = hist_e_ext_csm_sacc_amplitude, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Late Extinction CS+* ###
+
+```{r late extinction csp saccade amplitude}
+
+hist_l_ext_csp_sacc_amplitude <- df %>%
+  ggplot(aes(l_ext_csp_sacc_amplitude, fill = iu_group)) +
+  geom_histogram(binwidth = .5, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 14, 2)) +
+  labs(x = "Saccade Amplitude (deg/ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Late Extinction CS+ Saccade Amplitude") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_l_ext_csp_sacc_amplitude
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_l_ext_csp_sacc_amplitude.png", 
+       plot = hist_l_ext_csp_sacc_amplitude, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Late Extinction CS-* ###
+
+```{r late extinction csm saccade amplitude}
+
+hist_l_ext_csm_sacc_amplitude <- df %>%
+  ggplot(aes(l_ext_csm_sacc_amplitude, fill = iu_group)) +
+  geom_histogram(binwidth = .5, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 14, 2)) +
+  labs(x = "Saccade Amplitude (deg/ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Late Extinction CS- Saccade Amplitude") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_l_ext_csm_sacc_amplitude
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_l_ext_csm_sacc_amplitude.png", 
+       plot = hist_l_ext_csm_sacc_amplitude, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+# combine extinction saccade amplitude graphs
+hists_ext_sacc_amplitude <- 
+  grid.arrange(hist_e_ext_csp_sacc_amplitude, hist_e_ext_csm_sacc_amplitude,
+               hist_l_ext_csp_sacc_amplitude, hist_l_ext_csm_sacc_amplitude,
+             ncol =2)
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hists_ext_sacc_amplitude.png", 
+       plot = hists_ext_sacc_amplitude, 
+       width = 30, 
+       height = 20, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+# *Descriptives* #
+
+## *Questionnaire Variables* ##
+
+```{r questionnaire variables descriptives}
+
+# for all participants
+descriptives_all_questionnaires <- 
+  describe(df[, c("ius_total", "sticsa_total")], na.rm = TRUE)
+
+# for high IU group
+descriptives_high_iu_questionnaires <- 
+  describe(df[df$iu_group == "1", c("ius_total", "sticsa_total")], na.rm = TRUE)
+
+# for low IU group
+descriptives_low_iu_questionnaires <- 
+  describe(df[df$iu_group == "-1", c("ius_total", "sticsa_total")], na.rm = TRUE)
+
+# combine all into table
+descriptives_questionnaires_table <- round(rbind(descriptives_all_questionnaires, 
+                                           descriptives_high_iu_questionnaires,
+                                           descriptives_low_iu_questionnaires), 2)
+
+# rename rows for easier interpretation
+rownames(descriptives_questionnaires_table) <- c("IUS 27 (All Participants)",
+                                                 "STICSA Total (All Participants)",
+                                                 "IUS 27 (High IU Group)",
+                                                 "STICSA Total (High IU Group)",
+                                                 "IUS 27 (Low IU Group)",
+                                                 "STICSA Total (Low IU Group)")
+
+descriptives_questionnaires_table
+
+# write to csv
+write.csv(descriptives_questionnaires_table, file = "tables/descriptives/descriptives_questionnaires_table.csv",
+          row.names = TRUE)
+
+```
+
+## *Eye Movement Variables* ##
+
+### *Fixation Count* ###
+
+```{r fixation count descriptives}
+
+# for all participants
+descriptives_all_fix_count <- 
+  describe(df[, c("acq_csp_fix_count","acq_csm_fix_count", 
+                  "e_ext_csp_fix_count", "e_ext_csm_fix_count",
+                  "l_ext_csp_fix_count", "l_ext_csm_fix_count")], 
+           na.rm = TRUE)
+  
+# for high IU group
+descriptives_high_iu_fix_count <- 
+  describe(df[df$iu_group == "1", c("acq_csp_fix_count","acq_csm_fix_count", 
+                                    "e_ext_csp_fix_count", "e_ext_csm_fix_count",
+                                    "l_ext_csp_fix_count", "l_ext_csm_fix_count")], 
+           na.rm = TRUE)
+  
+# for low IU group
+descriptives_low_iu_fix_count <- 
+  describe(df[df$iu_group == "-1", c("acq_csp_fix_count","acq_csm_fix_count", 
+                                     "e_ext_csp_fix_count", "e_ext_csm_fix_count",
+                                     "l_ext_csp_fix_count", "l_ext_csm_fix_count")], 
+           na.rm = TRUE)
+
+# combine all into table
+descriptives_fix_count_table <- round(rbind(descriptives_all_fix_count, 
+                                            descriptives_high_iu_fix_count,
+                                            descriptives_low_iu_fix_count), 2)
+
+# rename rows for easier interpretation
+rownames(descriptives_fix_count_table) <- c("Acquisition CS+ Fix Count (All Participants)", 
+                                            "Acquisition CS- Fix Count (All Participants)", 
+                                            "Early Extinction CS+ Fix Count (All Participants)", 
+                                            "Early Extinction CS- Fix Count (All Participants)",
+                                            "Late Extinction CS+ Fix Count (All Participants)", 
+                                            "Late Extinction CS- Fix Count (All Participants)",
+                                            "Acquisition CS+ Fix Count (High IU Group)", 
+                                            "Acquisition CS- Fix Count (High IU Group)", 
+                                            "Early Extinction CS+ Fix Count (High IU Group)", 
+                                            "Early Extinction CS- Fix Count (High IU Group)",
+                                            "Late Extinction CS+ Fix Count (High IU Group)", 
+                                            "Late Extinction CS- Fix Count (High IU Group)",
+                                            "Acquisition CS+ Fix Count (Low IU Group)", 
+                                            "Acquisition CS- Fix Count (Low IU Group)", 
+                                            "Early Extinction CS+ Fix Count (Low IU Group)", 
+                                            "Early Extinction CS- Fix Count (Low IU Group)",
+                                            "Late Extinction CS+ Fix Count (Low IU Group)", 
+                                            "Late Extinction CS- Fix Count (Low IU Group)")
+
+descriptives_fix_count_table
+
+# write to csv
+write.csv(descriptives_fix_count_table, file = "tables/descriptives/descriptives_fix_count_table.csv",
+          row.names = TRUE)
+
+```
+
+### *Fixation Duration* ###
+
+```{r fixation duration descriptives}
+
+# for all participants
+descriptives_all_fix_duration <- 
+  describe(df[, c("acq_csp_fix_duration","acq_csm_fix_duration", 
+                  "e_ext_csp_fix_duration", "e_ext_csm_fix_duration",
+                  "l_ext_csp_fix_duration", "l_ext_csm_fix_duration")], 
+           na.rm = TRUE)
+  
+# for high IU group
+descriptives_high_iu_fix_duration <- 
+  describe(df[df$iu_group == "1", c("acq_csp_fix_duration","acq_csm_fix_duration", 
+                                    "e_ext_csp_fix_duration", "e_ext_csm_fix_duration", 
+                                    "l_ext_csp_fix_duration", "l_ext_csm_fix_duration")], 
+           na.rm = TRUE)
+  
+# for low IU group
+descriptives_low_iu_fix_duration <- 
+  describe(df[df$iu_group == "-1", c("acq_csp_fix_duration","acq_csm_fix_duration", 
+                                     "e_ext_csp_fix_duration", "e_ext_csm_fix_duration",
+                                     "l_ext_csp_fix_duration", "l_ext_csm_fix_duration")], 
+           na.rm = TRUE)
+
+# combine all in a table
+descriptives_fix_duration_table <- round(rbind(descriptives_all_fix_duration, 
+                                            descriptives_high_iu_fix_duration,
+                                            descriptives_low_iu_fix_duration), 2)
+
+# rename rows for easier interpretation
+rownames(descriptives_fix_duration_table) <- c("Acquisition CS+ Fix Duration (All Participants)", 
+                                            "Acquisition CS- Fix Duration (All Participants)", 
+                                            "Early Extinction CS+ Fix Duration (All Participants)", 
+                                            "Early Extinction CS- Fix Duration (All Participants)",
+                                            "Late Extinction CS+ Fix Duration (All Participants)", 
+                                            "Late Extinction CS- Fix Duration (All Participants)",
+                                            "Acquisition CS+ Fix Duration (High IU Group)", 
+                                            "Acquisition CS- Fix Duration (High IU Group)", 
+                                            "Early Extinction CS+ Fix Duration (High IU Group)", 
+                                            "Early Extinction CS- Fix Duration (High IU Group)",
+                                            "Late Extinction CS+ Fix Duration (High IU Group)", 
+                                            "Late Extinction CS- Fix Duration (High IU Group)",
+                                            "Acquisition CS+ Fix Duration (Low IU Group)", 
+                                            "Acquisition CS- Fix Duration (Low IU Group)", 
+                                            "Early Extinction CS+ Fix Duration (Low IU Group)", 
+                                            "Early Extinction CS- Fix Duration (Low IU Group)",
+                                            "Late Extinction CS+ Fix Duration (Low IU Group)", 
+                                            "Late Extinction CS- Fix Duration (Low IU Group)")
+
+descriptives_fix_duration_table
+
+# write to csv
+write.csv(descriptives_fix_duration_table, file = "tables/descriptives/descriptives_fix_duration_table.csv", 
+          row.names = TRUE)
+
+```
+
+### *Saccade Amplitude* ###
+
+```{r saccade amplitude descriptives}
+
+# for all participants
+descriptives_all_sacc_amplitude <- 
+  describe(df[, c("acq_csp_sacc_amplitude","acq_csm_sacc_amplitude", 
+                  "e_ext_csp_sacc_amplitude", "e_ext_csm_sacc_amplitude",
+                  "l_ext_csp_sacc_amplitude", "l_ext_csm_sacc_amplitude")], 
+           na.rm = TRUE)
+  
+# for high IU group
+descriptives_high_iu_sacc_amplitude <- 
+  describe(df[df$iu_group == "1", c("acq_csp_sacc_amplitude","acq_csm_sacc_amplitude",
+                                    "e_ext_csp_sacc_amplitude", "e_ext_csm_sacc_amplitude",
+                                    "l_ext_csp_sacc_amplitude", "l_ext_csm_sacc_amplitude")], 
+           na.rm = TRUE)
+  
+# for low IU group
+descriptives_low_iu_sacc_amplitude <- 
+  describe(df[df$iu_group == "-1", c("acq_csp_sacc_amplitude","acq_csm_sacc_amplitude", 
+                                     "e_ext_csp_sacc_amplitude", "e_ext_csm_sacc_amplitude",
+                                     "l_ext_csp_sacc_amplitude", "l_ext_csm_sacc_amplitude")], 
+           na.rm = TRUE)
+
+# combine all into one table
+descriptives_sacc_amplitude_table <- round(rbind(descriptives_all_sacc_amplitude, 
+                                            descriptives_high_iu_sacc_amplitude,
+                                            descriptives_low_iu_sacc_amplitude), 2)
+
+# rename rows for easier interpretation
+rownames(descriptives_sacc_amplitude_table) <- c("Acquisition CS+ Sacc Amplitude (All Participants)", 
+                                            "Acquisition CS- Sacc Amplitude (All Participants)", 
+                                            "Early Extinction CS+ Sacc Amplitude (All Participants)", 
+                                            "Early Extinction CS- Sacc Amplitude (All Participants)",
+                                            "Late Extinction CS+ Sacc Amplitude (All Participants)", 
+                                            "Late Extinction CS- Sacc Amplitude (All Participants)",
+                                            "Acquisition CS+ Sacc Amplitude (High IU Group)", 
+                                            "Acquisition CS- Sacc Amplitude (High IU Group)", 
+                                            "Early Extinction CS+ Sacc Amplitude (High IU Group)", 
+                                            "Early Extinction CS- Sacc Amplitude (High IU Group)",
+                                            "Late Extinction CS+ Sacc Amplitude (High IU Group)", 
+                                            "Late Extinction CS- Sacc Amplitude (High IU Group)",
+                                            "Acquisition CS+ Sacc Amplitude (Low IU Group)", 
+                                            "Acquisition CS- Sacc Amplitude (Low IU Group)", 
+                                            "Early Extinction CS+ Sacc Amplitude (Low IU Group)", 
+                                            "Early Extinction CS- Sacc Amplitude (Low IU Group)",
+                                            "Late Extinction CS+ Sacc Amplitude (Low IU Group)", 
+                                            "Late Extinction CS- Sacc Amplitude (Low IU Group)")
+
+descriptives_sacc_amplitude_table
+
+# write to csv
+write.csv(descriptives_sacc_amplitude_table, file = "tables/descriptives/descriptives_sacc_amplitude_table.csv", 
+          row.names = TRUE)
+
+```
+
+# *Data Transformation* #
+
+## *Log-Transformation of Fixation Duration* ##
+
+```{r log-transformation of fixation duration}
+
+# as fixation duration had high skew (>3) in high IU group for early and late 
+# extinction CS-, fixation duration will be log-transformed for each condition
+
+# for acquisition CS+
+df$acq_csp_fix_duration_log <- log(df$acq_csp_fix_duration)
+
+# for acquisition CS-
+df$acq_csm_fix_duration_log <- log(df$acq_csm_fix_duration)
+
+# for early extinction CS+
+df$e_ext_csp_fix_duration_log <- log(df$e_ext_csp_fix_duration)
+
+# for early extinction CS-
+df$e_ext_csm_fix_duration_log <- log(df$e_ext_csm_fix_duration)
+
+# for late extinction CS+
+df$l_ext_csp_fix_duration_log <- log(df$l_ext_csp_fix_duration)
+
+# for late extinction CS-
+df$l_ext_csm_fix_duration_log <- log(df$l_ext_csm_fix_duration)
+
+```
+
+## *Check Descriptives of Fixation Duration Following Log-Transformation* ##
+
+```{r check descriptives of fixation duration following transformation}
+
+# re-compute descriptives for fixation duration following log transformation
+
+# for all participants
+descriptives_all_fix_duration_log <- 
+  describe(df[, c("acq_csp_fix_duration_log","acq_csm_fix_duration_log", 
+                  "e_ext_csp_fix_duration_log", "e_ext_csm_fix_duration_log",
+                  "l_ext_csp_fix_duration_log", "l_ext_csm_fix_duration_log")], 
+           na.rm = TRUE)
+  
+# for high IU group
+descriptives_high_iu_fix_duration_log <- 
+  describe(df[df$iu_group == "1", c("acq_csp_fix_duration_log","acq_csm_fix_duration_log", 
+                                    "e_ext_csp_fix_duration_log", "e_ext_csm_fix_duration_log", 
+                                    "l_ext_csp_fix_duration_log", "l_ext_csm_fix_duration_log")], 
+           na.rm = TRUE)
+  
+# for low IU group
+descriptives_low_iu_fix_duration_log <- 
+  describe(df[df$iu_group == "-1", c("acq_csp_fix_duration_log","acq_csm_fix_duration_log", 
+                                     "e_ext_csp_fix_duration_log", "e_ext_csm_fix_duration_log",
+                                     "l_ext_csp_fix_duration_log", "l_ext_csm_fix_duration_log")], 
+           na.rm = TRUE)
+
+# combine all to table
+descriptives_fix_duration_table_log <- round(rbind(descriptives_all_fix_duration_log, 
+                                            descriptives_high_iu_fix_duration_log,
+                                            descriptives_low_iu_fix_duration_log), 2)
+
+# rename rows for easier interpretation
+rownames(descriptives_fix_duration_table_log) <- c("Acquisition CS+ Fix Duration (All Participants)", 
+                                            "Acquisition CS- Fix Duration (All Participants)", 
+                                            "Early Extinction CS+ Fix Duration (All Participants)", 
+                                            "Early Extinction CS- Fix Duration (All Participants)",
+                                            "Late Extinction CS+ Fix Duration (All Participants)", 
+                                            "Late Extinction CS- Fix Duration (All Participants)",
+                                            "Acquisition CS+ Fix Duration (High IU Group)", 
+                                            "Acquisition CS- Fix Duration (High IU Group)", 
+                                            "Early Extinction CS+ Fix Duration (High IU Group)", 
+                                            "Early Extinction CS- Fix Duration (High IU Group)",
+                                            "Late Extinction CS+ Fix Duration (High IU Group)", 
+                                            "Late Extinction CS- Fix Duration (High IU Group)",
+                                            "Acquisition CS+ Fix Duration (Low IU Group)", 
+                                            "Acquisition CS- Fix Duration (Low IU Group)", 
+                                            "Early Extinction CS+ Fix Duration (Low IU Group)", 
+                                            "Early Extinction CS- Fix Duration (Low IU Group)",
+                                            "Late Extinction CS+ Fix Duration (Low IU Group)", 
+                                            "Late Extinction CS- Fix Duration (Low IU Group)")
+
+descriptives_fix_duration_table_log
+
+# write to csv
+write.csv(descriptives_fix_duration_table_log, file = "tables/descriptives/descriptives_fix_duration_table_log.csv", 
+          row.names = TRUE)
+
+### there are no longer any skew values of +/- 3. 
+
+```
+
+## *Check Histograms of Fixation Duration Following Log-Transformation* ##
+
+### *Acquisition CS+* ###
+
+```{r check histograms following log-transformation acq csp}
+
+########## pre-log-transformation
+hist_acq_csp_fix_duration
+
+########## post-log-transformation
+hist_acq_csp_fix_duration_log <- df %>%
+  ggplot(aes(acq_csp_fix_duration_log, fill = iu_group)) +
+  geom_histogram(binwidth = .2, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 12, 2)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Acquisition CS+ Fixation Duration (Log-Transformed)") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_acq_csp_fix_duration_log
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_acq_csp_fix_duration_log.png", 
+       plot = hist_acq_csp_fix_duration_log, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Acquisition CS-* ###
+
+```{r check histograms following log-transformation acq csm}
+
+########## pre-log-transformation
+hist_acq_csp_fix_duration_log
+
+########## post-log-transformation
+hist_acq_csm_fix_duration_log <- df %>%
+  ggplot(aes(acq_csm_fix_duration_log, fill = iu_group)) +
+  geom_histogram(binwidth = .2, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 12, 2)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Acquisition CS- Fixation Duration (Log-Transformed)") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_acq_csm_fix_duration_log
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_acq_csm_fix_duration_log.png", 
+       plot = hist_acq_csm_fix_duration_log, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+# combine histograms of acquisition fix duration pre and post log-transformation
+hists_fix_duration_acq_log <- grid.arrange(hist_acq_csp_fix_duration, hist_acq_csm_fix_duration,
+                                       hist_acq_csp_fix_duration_log, hist_acq_csm_fix_duration_log,
+                                       ncol = 2)
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hists_fix_duration_acq_log.png", 
+       plot = hists_fix_duration_acq_log, 
+       width = 30, 
+       height = 20, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Early Extinction CS+* ###
+
+```{r check histograms following log-transformation e ext csp}
+
+########## pre-log-transformation
+hist_e_ext_csp_fix_duration
+
+########## post-log-transformation
+hist_e_ext_csp_fix_duration_log <- df %>%
+  ggplot(aes(e_ext_csp_fix_duration_log, fill = iu_group)) +
+  geom_histogram(binwidth = .2, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 12, 2)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Early Extinction CS+ Fixation Duration (Log-Transformed)") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_e_ext_csp_fix_duration_log
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_e_ext_csp_fix_duration_log.png", 
+       plot = hist_e_ext_csp_fix_duration_log, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Early Extinction CS-* ###
+
+```{r check histograms following log-transformation e ext csm}
+
+########## pre-log-transformation
+hist_e_ext_csm_fix_duration
+
+########## post-log-transformation
+hist_e_ext_csm_fix_duration_log <- df %>%
+  ggplot(aes(e_ext_csm_fix_duration_log, fill = iu_group)) +
+  geom_histogram(binwidth = .2, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 12, 2)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Early Extinction CS- Fixation Duration (Log-Transformed)") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_e_ext_csm_fix_duration_log
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_e_ext_csm_fix_duration_log.png", 
+       plot = hist_e_ext_csm_fix_duration_log, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+# combine histograms of early extinction fix duration pre and post log-transformation
+hists_fix_duration_e_ext_log <- grid.arrange(hist_e_ext_csp_fix_duration, hist_e_ext_csm_fix_duration,
+                                       hist_e_ext_csp_fix_duration_log, hist_e_ext_csm_fix_duration_log,
+                                       ncol = 2)
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hists_fix_duration_e_ext_log.png", 
+       plot = hists_fix_duration_e_ext_log, 
+       width = 30, 
+       height = 20, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Late Extinction CS+* ###
+
+```{r check histograms following log-transformation l ext csp}
+
+########## pre-log-transformation
+hist_l_ext_csp_fix_duration
+
+########## post-log-transformation
+hist_l_ext_csp_fix_duration_log <- df %>%
+  ggplot(aes(l_ext_csp_fix_duration_log, fill = iu_group)) +
+  geom_histogram(binwidth = .2, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 12, 2)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Late Extinction CS+ Fixation Duration (Log-Transformed)") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_l_ext_csp_fix_duration_log
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_l_ext_csp_fix_duration_log.png", 
+       plot = hist_l_ext_csp_fix_duration_log, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+### *Late Extinction CS-* ###
+
+```{r check histograms following log-transformation l ext csm}
+
+########## pre-log-transformation
+hist_l_ext_csm_fix_duration
+
+########## post-log-transformation
+hist_l_ext_csm_fix_duration_log <- df %>%
+  ggplot(aes(l_ext_csm_fix_duration_log, fill = iu_group)) +
+  geom_histogram(binwidth = .2, colour = "white", alpha = .5, position = "identity") +
+  theme_classic() +
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_text(face = "bold", hjust = 0.5, size = 15)) +
+  scale_x_continuous(breaks = seq(0, 12, 2)) +
+  labs(x = "Fixation Duration (ms)", y = "Frequency") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  ggtitle("Histogram Late Extinction CS- Fixation Duration (Log-Transformed)") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  scale_fill_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+  labs(fill = "IU Group") 
+hist_l_ext_csm_fix_duration_log
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hist_l_ext_csm_fix_duration_log.png", 
+       plot = hist_l_ext_csm_fix_duration_log, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+# combine histograms of late extinction fix duration pre and post log-transformation
+hists_fix_duration_l_ext_log <- grid.arrange(hist_l_ext_csp_fix_duration, hist_l_ext_csm_fix_duration,
+                                       hist_l_ext_csp_fix_duration_log, hist_l_ext_csm_fix_duration_log,
+                                       ncol = 2)
+
+# save plot to file
+ggsave(filename = "graphs/histograms/hists_fix_duration_l_ext_log.png", 
+       plot = hists_fix_duration_l_ext_log, 
+       width = 30, 
+       height = 20, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+# *ANOVAs* #
+
+## *ANOVA Acquisition Fixation Count* ##
+
+```{r mixed ANOVA fixation count acquisition}
+
+# transform wide format data into long format for mixed ANOVA 
+df_long_acq_fix_count <- melt(df, id = c("id", "iu_group"), 
+                                 measure.vars = c("acq_csp_fix_count", 
+                                                  "acq_csm_fix_count"))
+
+# rename columns for easier interpretation
+colnames(df_long_acq_fix_count) = c("id", "iu_group", "condition", "fix_count")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_acq_fix_count$stimulus <- 
+  factor(ifelse(df_long_acq_fix_count$condition == "acq_csp_fix_count", 1, -1))
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) mixed ANOVA, 
+# and obtain effect size (partial eta squared)
+acq_fix_count_anova <- 
+  anova_test(df_long_acq_fix_count, fix_count ~ iu_group * stimulus + Error(id/stimulus),
+                        effect.size = "pes") 
+
+# obtain the mixed ANOVA results
+get_anova_table(acq_fix_count_anova)
+
+# results:
+# IU: F(1,137) = 4.81, p = .030*, eta2(partial) = .034
+# Stimulus: F(1,137) = 11.44, p < .001***, eta2(partial) = .077
+# IU * Stimulus: F(1, 137) = 0.26, p = .613, eta2(partial) = .002
+
+# therefore, there is a significant effect of IU & Stimulus on fixation count in acquisition, 
+# and no significant IU*Stimulus interaction
+
+# write to csv
+write.csv((get_anova_table(acq_fix_count_anova)), 
+          file = "tables/anovas/acq_fix_count_anova.csv")
+
+```
+
+## *ANOVA Acquisition Fixation Duration (Log Transformed)* ##
+
+```{r mixed ANOVA fixation duration acquisition log}
+
+# transform wide format data into long format for mixed ANOVA 
+df_long_acq_fix_duration_log <- melt(df, id = c("id", "iu_group"), 
+                                 measure.vars = c("acq_csp_fix_duration_log", 
+                                                  "acq_csm_fix_duration_log"))
+
+# the first input for melt command is the df with wide format. Second input
+# is id =, which is where we list ppts with specific variables within wide format
+# df. Here we have ppts ID no's as participant specific variable, and IU 
+# group they are assigned to is also specific for each participant. Therefore
+# only need to list the two variables after id =. 
+
+# rename columns for easier interpretation
+colnames(df_long_acq_fix_duration_log) = c("id", "iu_group", "condition", "fix_duration_log")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_acq_fix_duration_log$stimulus <- 
+  factor(ifelse(df_long_acq_fix_duration_log$condition == "acq_csp_fix_duration_log", 1, -1))
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) mixed ANOVA, 
+# and obtain effect size (partial eta squared)
+acq_fix_duration_anova_log <- 
+  anova_test(df_long_acq_fix_duration_log, fix_duration_log ~ iu_group * stimulus + Error(id/stimulus),
+                        effect.size = "pes") 
+# the error(id/stimulus) variable is unique to repeated-measures ANOVA, and means
+# that the variable 'stimulus' is manipulated within 'id'
+
+# obtain the mixed ANOVA results
+get_anova_table(acq_fix_duration_anova_log)
+
+# results:
+# IU: F(1,137) = 3.91, p = .050*, eta2(partial) = .028
+# Stimulus: F(1,137) = 2.92, p = .090, eta2(partial) = .021
+# IU * Stimulus: F(1, 137) = 1.27, p = .261, eta2(partial) = .009
+
+# therefore, there is a sig effect of IU, and no
+# sig effect of stimulus or IU-stimulus interaction 
+
+# write to csv
+write.csv((get_anova_table(acq_fix_duration_anova_log)), 
+          file = "tables/anovas/acq_fix_duration_anova_log.csv")
+
+```
+
+## *ANOVA Acquisition Saccade Amplitude* ##
+
+```{r mixed ANOVA saccade amplitude acquisition}
+
+# transform wide format data into long format for mixed ANOVA 
+df_long_acq_sacc_amplitude <- melt(df, id = c("id", "iu_group"), 
+                                 measure.vars = c("acq_csp_sacc_amplitude", 
+                                                  "acq_csm_sacc_amplitude"))
+
+# rename columns for easier interpretation
+colnames(df_long_acq_sacc_amplitude) = c("id", "iu_group", "condition", "sacc_amplitude")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_acq_sacc_amplitude$stimulus <- 
+  factor(ifelse(df_long_acq_sacc_amplitude$condition == "acq_csp_sacc_amplitude", 1, -1))
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) mixed ANOVA, 
+# and obtain effect size (partial eta squared)
+acq_sacc_amplitude_anova <- 
+  anova_test(df_long_acq_sacc_amplitude, sacc_amplitude ~ iu_group * stimulus + Error(id/stimulus),
+             effect.size = "pes") 
+
+# obtain the mixed ANOVA results
+get_anova_table(acq_sacc_amplitude_anova)
+
+# results:
+# IU: F(1,135) = 2.98, p = .086, eta2(partial) = .022
+# Stimulus: F(1,135) = 0.95, p = .332, eta2(partial) = .007
+# IU * Stimulus: F(1, 135) = 0.38, p = .539, eta2(partial) = .003
+
+# therefore, there are no significant effects on saccade amplitude in
+# acquisition
+
+# write to csv
+write.csv((get_anova_table(acq_sacc_amplitude_anova)), 
+          file = "tables/anovas/acq_sacc_amplitude_anova.csv")
+
+```
+## *ANOVA Extinction Fixation Count* ##
+
+```{r mixed ANOVA fixation count extinction}
+
+# transform wide format data into long format for mixed ANOVA 
+df_long_ext_fix_count <- melt(df, id = c("id", "iu_group"), 
+                                 measure.vars = c("e_ext_csp_fix_count", 
+                                                  "e_ext_csm_fix_count",
+                                                  "l_ext_csp_fix_count", 
+                                                  "l_ext_csm_fix_count"))
+
+# rename columns for easier interpretation
+colnames(df_long_ext_fix_count) = c("id", "iu_group", "condition", "fix_count")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_ext_fix_count$stimulus <- 
+  factor(ifelse(df_long_ext_fix_count$condition == "e_ext_csp_fix_count" | 
+                  df_long_ext_fix_count$condition == "l_ext_csp_fix_count", 1, -1))
+
+# create column to code extinction as early (1) and late (-1)
+df_long_ext_fix_count$time <- 
+  factor(ifelse(df_long_ext_fix_count$condition == "e_ext_csp_fix_count" | 
+                  df_long_ext_fix_count$condition == "e_ext_csm_fix_count", 1, -1))
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) x 2 (Time: Early, Late) mixed ANOVA, 
+# and obtain effect size (partial eta squared)
+ext_fix_count_anova <- 
+  anova_test(df_long_ext_fix_count, 
+             fix_count ~ iu_group * stimulus * time + Error(id/(stimulus*time)),
+             effect.size = "pes") 
+
+# obtain the mixed ANOVA results
+get_anova_table(ext_fix_count_anova)
+
+# results:
+# IU: F(1,137) = 7.67, p = .006 ***, eta2(partial) = .053
+# Stimulus: F(1,137) = 4.16, p = .043 *, eta2(partial) = .029
+# Time: F(1,137) = 5.73, p = .018 *, eta2(partial) = .049
+# IU * Stimulus: F(1, 137) = 3.46, p = .065, eta2(partial) = .025
+# IU * Time: F(1,137) = 4.57, p = .034 *, eta2(partial) = . 032
+# Stimulus * Time: F(1,137) = 0.06, p = .806, eta2(partial) < .001
+# IU * Stimulus * Time: F(1,137) = 0.60, p = .440, eta2(partial) = .004
+
+# therefore, there is a significant effect of IU, Stimulus and Time on fixation count in extinction, 
+# as well as a significant interaction effect of IU * Time,
+# but no other significant interactions. 
+
+# write to csv
+write.csv((get_anova_table(ext_fix_count_anova)), 
+          file = "tables/anovas/ext_fix_count_anova.csv")
+
+# as there was a significant IU*Time interaction, conduct simple 
+# main effects analysis:
+## obtain effect of IU at each level of time 
+simple_effects_ext_fix_count_iu <- df_long_ext_fix_count %>%
+  group_by(time) %>%
+  anova_test(dv = fix_count, wid = id, between = iu_group, within = stimulus, effect.size = "pes") %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+  
+
+# get the output
+simple_effects_ext_fix_count_iu
+
+# results: 
+# the effect of IU group at early extinction was significant [F(1,137) = 11.41, p = .006, pes = .077]
+# The effect of IU group at late extinction was not significant [F(1,137) = 3.63, p = .354, pes = .026]
+
+```
+
+## *ANOVA Extinction Fixation Duration (Log Transformed)* ##
+
+```{r mixed ANOVA fixation duration extinction log}
+
+# transform wide format data into long format for mixed ANOVA 
+df_long_ext_fix_duration_log <- melt(df, id = c("id", "iu_group"), 
+                                 measure.vars = c("e_ext_csp_fix_duration_log", 
+                                                  "e_ext_csm_fix_duration_log",
+                                                  "l_ext_csp_fix_duration_log", 
+                                                  "l_ext_csm_fix_duration_log"))
+
+# rename columns for easier interpretation
+colnames(df_long_ext_fix_duration_log) = c("id", "iu_group", "condition", "fix_duration_log")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_ext_fix_duration_log$stimulus <- 
+  factor(ifelse(df_long_ext_fix_duration_log$condition == "e_ext_csp_fix_duration_log" | 
+                  df_long_ext_fix_duration_log$condition == "l_ext_csp_fix_duration_log", 1, -1))
+
+# create column to code extinction as early (1) and late (-1)
+df_long_ext_fix_duration_log$time <- 
+  factor(ifelse(df_long_ext_fix_duration_log$condition == "e_ext_csp_fix_duration_log" | 
+                  df_long_ext_fix_duration_log$condition == "e_ext_csm_fix_duration_log", 1, -1))
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) x 2 (Time: Early, Late) mixed ANOVA, 
+# and obtain effect size (partial eta squared)
+ext_fix_duration_anova_log <- 
+  anova_test(df_long_ext_fix_duration_log, 
+             fix_duration_log ~ iu_group * stimulus * time + Error(id/(stimulus*time)),
+             effect.size = "pes") 
+
+# obtain the mixed ANOVA results
+get_anova_table(ext_fix_duration_anova_log)
+
+# results:
+# IU: F(1,137) = 11.21, p < .001 *, eta2(partial) = .076
+# Stimulus: F(1,137) = 0.51, p = .477, eta2(partial) = .004
+# Time: F(1,137) = 4.35, p = .039*, eta2(partial) = .031
+# IU * Stimulus: F(1, 137) = 5.82, p = .017*, eta2(partial) = .041
+# IU * Time: F(1,137) = 0.24, p = .624, eta2(partial) = .002
+# Stimulus * Time: F(1,137) = 0.17, p = 680, eta2(partial) = .001
+# IU * Stimulus * Time: F(1,137) = 0.95, p = .333, eta2(partial) = .007
+
+# therefore, there is a significant effect of IU, Time and IU-Stimulus
+# interaction on fixation duration in extinction, 
+# and no other significant effects or interactions. 
+
+# write to csv
+write.csv((get_anova_table(ext_fix_duration_anova_log)), 
+          file = "tables/anovas/ext_fix_duration_anova_log.csv")
+
+# as there was a significant IU*Stimulus interaction, conduct simple 
+# main effects analysis:
+## obtain effect of IU at each level of stimulus 
+simple_effects_ext_fix_duration_log_iu <- df_long_ext_fix_duration_log %>%
+  group_by(stimulus) %>%
+  anova_test(dv = fix_duration_log, wid = id, between = iu_group, within = time, effect.size = "pes") %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+
+# get the output
+simple_effects_ext_fix_duration_log_iu
+
+# results: 
+# The effect of IU group in response to CS+ was not significant [F(1,137) = 6.70, p = .066, pes = .047]
+# the effect of IU group in response to CS- was significant [F(1,137) = 14.43, p = .001, pes = .095]
+
+
+```
+
+## *ANOVA Extinction Saccade Amplitude* ##
+
+```{r mixed ANOVA saccade amplitude extinction}
+
+# transform wide format data into long format for mixed ANOVA 
+df_long_ext_sacc_amplitude <- melt(df, id = c("id", "iu_group"), 
+                                 measure.vars = c("e_ext_csp_sacc_amplitude", 
+                                                  "e_ext_csm_sacc_amplitude",
+                                                  "l_ext_csp_sacc_amplitude", 
+                                                  "l_ext_csm_sacc_amplitude"))
+
+# rename columns for easier interpretation
+colnames(df_long_ext_sacc_amplitude) = c("id", "iu_group", "condition", "sacc_amplitude")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_ext_sacc_amplitude$stimulus <- 
+  factor(ifelse(df_long_ext_sacc_amplitude$condition == "e_ext_csp_sacc_amplitude" | 
+                  df_long_ext_sacc_amplitude$condition == "l_ext_csp_sacc_amplitude", 1, -1))
+
+# create column to code extinction as early (1) and late (-1)
+df_long_ext_sacc_amplitude$time <- 
+  factor(ifelse(df_long_ext_sacc_amplitude$condition == "e_ext_csp_sacc_amplitude" | 
+                  df_long_ext_sacc_amplitude$condition == "e_ext_csm_sacc_amplitude", 1, -1))
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) x 2 (Time: Early, Late) mixed ANOVA, 
+# and obtain effect size (partial eta squared)
+ext_sacc_amplitude_anova <- 
+  anova_test(df_long_ext_sacc_amplitude, 
+             sacc_amplitude ~ iu_group * stimulus * time + Error(id/(stimulus*time)),
+             effect.size = "pes") 
+
+# obtain the mixed ANOVA results
+get_anova_table(ext_sacc_amplitude_anova)
+
+# results:
+# IU: F(1,134) = 3.17, p = .077, eta2(partial) = .023
+# Stimulus: F(1,134) = 0.74, p = .391, eta2(partial) = .005
+# Time: F(1,134) = 0.28, p = .601, eta2(partial) = .002
+# IU * Stimulus: F(1, 134) = 1.69, p = .196, eta2(partial) = .012
+# IU * Time: F(1,134) = 0.13, p = .718, eta2(partial) < .001
+# Stimulus * Time: F(1,134) = 0.08, p = .781, eta2(partial) < .001
+# IU * Stimulus * Time: F(1,134) = .61, p = .437, eta2(partial) < .001
+
+# therefore, there are no significant effects or interactions 
+# on saccade amplitude throughout extinction 
+
+# write to csv
+write.csv((get_anova_table(ext_sacc_amplitude_anova)), 
+          file = "tables/anovas/ext_sacc_amplitude_anova.csv")
+
+```
+
+# *Bar Graphs - Extinction Only* #
+
+## *Fixation Count* ##
+
+```{r bar graph extinction fixation count }
+
+# obtain mean fix count for each group at each stimulus type and save as vector 
+mean_e_ext_fix_count_high_iu_csp <- 
+  mean(df$e_ext_csp_fix_count[df_long_ext_fix_count$iu_group == "1"], na.rm = TRUE) # high IU CS+ early
+mean_e_ext_fix_count_low_iu_csp <- 
+  mean(df$e_ext_csp_fix_count[df_long_ext_fix_count$iu_group == "-1"], na.rm = TRUE) # low IU CS+ early
+mean_e_ext_fix_count_high_iu_csm <- 
+  mean(df$e_ext_csm_fix_count[df_long_ext_fix_count$iu_group == "1"], na.rm = TRUE) # high IU CS- early
+mean_e_ext_fix_count_low_iu_csm <- 
+  mean(df$e_ext_csm_fix_count[df_long_ext_fix_count$iu_group == "-1"], na.rm = TRUE) # low IU CS- early
+mean_l_ext_fix_count_high_iu_csp <- 
+  mean(df$l_ext_csp_fix_count[df_long_ext_fix_count$iu_group == "1"], na.rm = TRUE) # high IU CS+ late
+mean_l_ext_fix_count_low_iu_csp <- 
+  mean(df$l_ext_csp_fix_count[df_long_ext_fix_count$iu_group == "-1"], na.rm = TRUE) # low IU CS+ late
+mean_l_ext_fix_count_high_iu_csm <- 
+  mean(df$l_ext_csm_fix_count[df_long_ext_fix_count$iu_group == "1"], na.rm = TRUE) # high IU CS- late
+mean_l_ext_fix_count_low_iu_csm <- 
+  mean(df$l_ext_csm_fix_count[df_long_ext_fix_count$iu_group == "-1"], na.rm = TRUE) # low IU CS- late
+
+# combine into single variable  
+all_mean_ext_fix_count <- 
+  c(mean_e_ext_fix_count_high_iu_csp, mean_e_ext_fix_count_low_iu_csp, 
+    mean_e_ext_fix_count_high_iu_csm, mean_e_ext_fix_count_low_iu_csm,
+    mean_l_ext_fix_count_high_iu_csp, mean_l_ext_fix_count_low_iu_csp, 
+    mean_l_ext_fix_count_high_iu_csm, mean_l_ext_fix_count_low_iu_csm)
+
+# obtain SD fix count for each group at each stimulus type and save as vector 
+sd_e_ext_fix_count_high_iu_csp <- 
+  sd(df$e_ext_csp_fix_count[df_long_ext_fix_count$iu_group == "1"], na.rm = TRUE) # high IU CS+ early
+sd_e_ext_fix_count_low_iu_csp <- 
+  sd(df$e_ext_csp_fix_count[df_long_ext_fix_count$iu_group == "-1"], na.rm = TRUE) # low IU CS+ early
+sd_e_ext_fix_count_high_iu_csm <- 
+  sd(df$e_ext_csm_fix_count[df_long_ext_fix_count$iu_group == "1"], na.rm = TRUE) # high IU CS- early
+sd_e_ext_fix_count_low_iu_csm <- 
+  sd(df$e_ext_csm_fix_count[df_long_ext_fix_count$iu_group == "-1"], na.rm = TRUE) # low IU CS- early
+sd_l_ext_fix_count_high_iu_csp <- 
+  sd(df$l_ext_csp_fix_count[df_long_ext_fix_count$iu_group == "1"], na.rm = TRUE) # high IU CS+ late
+sd_l_ext_fix_count_low_iu_csp <- 
+  sd(df$l_ext_csp_fix_count[df_long_ext_fix_count$iu_group == "-1"], na.rm = TRUE) # low IU CS+ late
+sd_l_ext_fix_count_high_iu_csm <- 
+  sd(df$l_ext_csm_fix_count[df_long_ext_fix_count$iu_group == "1"], na.rm = TRUE) # high IU CS- late
+sd_l_ext_fix_count_low_iu_csm <- 
+  sd(df$l_ext_csm_fix_count[df_long_ext_fix_count$iu_group == "-1"], na.rm = TRUE) # low IU CS- late
+
+# obtain SE:
+se_e_ext_fix_count_high_iu_csp <- sd_e_ext_fix_count_high_iu_csp/sqrt(length(df$id))
+se_e_ext_fix_count_low_iu_csp <- sd_e_ext_fix_count_low_iu_csp/sqrt(length(df$id))
+se_e_ext_fix_count_high_iu_csm <- sd_e_ext_fix_count_high_iu_csm/sqrt(length(df$id))
+se_e_ext_fix_count_low_iu_csm <- sd_e_ext_fix_count_low_iu_csm/sqrt(length(df$id))
+se_l_ext_fix_count_high_iu_csp <- sd_l_ext_fix_count_high_iu_csp/sqrt(length(df$id))
+se_l_ext_fix_count_low_iu_csp <- sd_l_ext_fix_count_low_iu_csp/sqrt(length(df$id))
+se_l_ext_fix_count_high_iu_csm <- sd_l_ext_fix_count_high_iu_csm/sqrt(length(df$id))
+se_l_ext_fix_count_low_iu_csm <- sd_l_ext_fix_count_low_iu_csm/sqrt(length(df$id))
+
+# Combine all into single variable called all_se
+all_se_ext_fix_count <- c(se_e_ext_fix_count_high_iu_csp, se_e_ext_fix_count_low_iu_csp,
+                          se_e_ext_fix_count_high_iu_csm, se_e_ext_fix_count_low_iu_csm,
+                          se_l_ext_fix_count_high_iu_csp, se_l_ext_fix_count_low_iu_csp, 
+                          se_l_ext_fix_count_high_iu_csm, se_l_ext_fix_count_low_iu_csm)
+
+### Create new data frame for figures
+# Which includes mean and SE for each condition
+df_fig_extinction_fix_count <- data.frame(all_mean_ext_fix_count, all_se_ext_fix_count)
+
+### add labels 
+# add two more variables to indicate IU group and stimulus type. 
+# for IU group
+df_fig_extinction_fix_count$iu_group[1] <- "High IU"
+df_fig_extinction_fix_count$iu_group[2] <- "Low IU"
+df_fig_extinction_fix_count$iu_group[3] <- "High IU"
+df_fig_extinction_fix_count$iu_group[4] <- "Low IU"
+df_fig_extinction_fix_count$iu_group[5] <- "High IU"
+df_fig_extinction_fix_count$iu_group[6] <- "Low IU"
+df_fig_extinction_fix_count$iu_group[7] <- "High IU"
+df_fig_extinction_fix_count$iu_group[8] <- "Low IU"
+
+# for stimulus
+df_fig_extinction_fix_count$stimulus[1] <- "CS+"
+df_fig_extinction_fix_count$stimulus[2] <- "CS+"
+df_fig_extinction_fix_count$stimulus[3] <- "CS-"
+df_fig_extinction_fix_count$stimulus[4] <- "CS-"
+df_fig_extinction_fix_count$stimulus[5] <- "CS+"
+df_fig_extinction_fix_count$stimulus[6] <- "CS+"
+df_fig_extinction_fix_count$stimulus[7] <- "CS-"
+df_fig_extinction_fix_count$stimulus[8] <- "CS-"
+
+# and re-order levels of stimulus factor so that CS+ appears on left in the graph
+df_fig_extinction_fix_count$stimulus <- 
+  factor(df_fig_extinction_fix_count$stimulus,levels=c("CS+","CS-"))
+
+# for early / late extinction
+df_fig_extinction_fix_count$time[1] <- "Early"
+df_fig_extinction_fix_count$time[2] <- "Early"
+df_fig_extinction_fix_count$time[3] <- "Early"
+df_fig_extinction_fix_count$time[4] <- "Early"
+df_fig_extinction_fix_count$time[5] <- "Late"
+df_fig_extinction_fix_count$time[6] <- "Late"
+df_fig_extinction_fix_count$time[7] <- "Late"
+df_fig_extinction_fix_count$time[8] <- "Late"
+
+### create figure
+fig_extinction_fix_count <- 
+  ggplot(df_fig_extinction_fix_count, aes(x = iu_group, y = all_mean_ext_fix_count, 
+                                       fill = stimulus)) + 
+  geom_bar(stat = "identity", position = position_dodge(.6), width = .5, alpha = .85) +
+  scale_y_continuous(limits = c(0, 10), expand = c(0,0)) +
+  facet_wrap(~ time) +
+  theme_classic() + 
+  theme(text = element_text(family = "serif"), 
+        plot.title = element_blank()) +
+  theme(axis.text.y = element_text(size = 15), axis.ticks.y = element_line(size = 1), 
+         axis.line.y = element_line(colour = "black")) +
+  theme(axis.text.x = element_text(colour = "black", size = 15), 
+         axis.ticks.x = element_blank(),
+         axis.line.x = element_line(colour = "black")) +
+  theme(axis.title = element_text(size = 20, face = "bold")) +
+  theme(legend.position = "top", 
+         legend.title = element_text(size = 20, face = "bold"), 
+         legend.box.background = element_rect(size = .75, colour = "#403250")) +
+  theme(legend.text = element_text(size = 15)) +
+  scale_fill_manual(values = c("#c45150", "#824372")) +
+  labs(fill = "Stimulus") +
+  labs(y = "Mean Fixation Count", x = "Intolerance of Uncertainty") +
+  geom_errorbar(aes(ymin = all_mean_ext_fix_count - all_se_ext_fix_count, 
+                    ymax = all_mean_ext_fix_count + all_se_ext_fix_count), 
+                width = .15, position = position_dodge(.6), colour = "#090707", size = .3) +
+  theme(strip.background = element_blank()) +
+  theme(strip.text = element_text(size = 20, face = "bold")) 
+
+ # obtain and check figure 
+print(fig_extinction_fix_count) 
+
+# save figure to files
+ggsave(filename = "graphs/bar_plots/extinction_fix_count.png", 
+       plot = fig_extinction_fix_count, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+## *Fixation Duration (Log Transformed)* ##
+
+```{r bar graph extinction fixation duration log}
+
+# obtain mean fix duration for each group at each stimulus type and save as vector 
+# high IU CS+ early
+mean_e_ext_fix_duration_high_iu_csp_log <- 
+  mean(df$e_ext_csp_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS+ early
+mean_e_ext_fix_duration_low_iu_csp_log <- 
+  mean(df$e_ext_csp_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS- early
+mean_e_ext_fix_duration_high_iu_csm_log <- 
+  mean(df$e_ext_csm_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS- early
+mean_e_ext_fix_duration_low_iu_csm_log <- 
+  mean(df$e_ext_csm_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS+ late
+mean_l_ext_fix_duration_high_iu_csp_log <- 
+  mean(df$l_ext_csp_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS+ late
+mean_l_ext_fix_duration_low_iu_csp_log <- 
+  mean(df$l_ext_csp_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS- late
+mean_l_ext_fix_duration_high_iu_csm_log <- 
+  mean(df$l_ext_csm_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS- late
+mean_l_ext_fix_duration_low_iu_csm_log <- 
+  mean(df$l_ext_csm_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "-1"], na.rm = TRUE) 
+
+# combine into single variable called 
+all_mean_ext_fix_duration_log <- 
+  c(mean_e_ext_fix_duration_high_iu_csp_log, mean_e_ext_fix_duration_low_iu_csp_log, 
+    mean_e_ext_fix_duration_high_iu_csm_log, mean_e_ext_fix_duration_low_iu_csm_log,
+    mean_l_ext_fix_duration_high_iu_csp_log, mean_l_ext_fix_duration_low_iu_csp_log, 
+    mean_l_ext_fix_duration_high_iu_csm_log, mean_l_ext_fix_duration_low_iu_csm_log)
+
+# obtain SD fix duration for each group at each stimulus type and save as vector 
+# high IU CS+ early
+sd_e_ext_fix_duration_high_iu_csp_log <- 
+  sd(df$e_ext_csp_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS+ early
+sd_e_ext_fix_duration_low_iu_csp_log <- 
+  sd(df$e_ext_csp_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS- early
+sd_e_ext_fix_duration_high_iu_csm_log <- 
+  sd(df$e_ext_csm_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS- early
+sd_e_ext_fix_duration_low_iu_csm_log <- 
+  sd(df$e_ext_csm_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS+ late
+sd_l_ext_fix_duration_high_iu_csp_log <- 
+  sd(df$l_ext_csp_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS+ late
+sd_l_ext_fix_duration_low_iu_csp_log <- 
+  sd(df$l_ext_csp_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS- late
+sd_l_ext_fix_duration_high_iu_csm_log <- 
+  sd(df$l_ext_csm_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS- late
+sd_l_ext_fix_duration_low_iu_csm_log <- 
+  sd(df$l_ext_csm_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "-1"], na.rm = TRUE) 
+
+# obtain SE:
+se_e_ext_fix_duration_high_iu_csp_log <- sd_e_ext_fix_duration_high_iu_csp_log/sqrt(length(df$id))
+se_e_ext_fix_duration_low_iu_csp_log <- sd_e_ext_fix_duration_low_iu_csp_log/sqrt(length(df$id))
+se_e_ext_fix_duration_high_iu_csm_log <- sd_e_ext_fix_duration_high_iu_csm_log/sqrt(length(df$id))
+se_e_ext_fix_duration_low_iu_csm_log <- sd_e_ext_fix_duration_low_iu_csm_log/sqrt(length(df$id))
+se_l_ext_fix_duration_high_iu_csp_log <- sd_l_ext_fix_duration_high_iu_csp_log/sqrt(length(df$id))
+se_l_ext_fix_duration_low_iu_csp_log <- sd_l_ext_fix_duration_low_iu_csp_log/sqrt(length(df$id))
+se_l_ext_fix_duration_high_iu_csm_log <- sd_l_ext_fix_duration_high_iu_csm_log/sqrt(length(df$id))
+se_l_ext_fix_duration_low_iu_csm_log <- sd_l_ext_fix_duration_low_iu_csm_log/sqrt(length(df$id))
+
+# combine all into single variable 
+all_se_ext_fix_duration_log <- c(se_e_ext_fix_duration_high_iu_csp_log, se_e_ext_fix_duration_low_iu_csp_log,
+                          se_e_ext_fix_duration_high_iu_csm_log, se_e_ext_fix_duration_low_iu_csm_log,
+                          se_l_ext_fix_duration_high_iu_csp_log, se_l_ext_fix_duration_low_iu_csp_log, 
+                          se_l_ext_fix_duration_high_iu_csm_log, se_l_ext_fix_duration_low_iu_csm_log)
+
+# create new data frame for figures which includes mean and SE for each condition
+df_fig_extinction_fix_duration_log <- data.frame(all_mean_ext_fix_duration_log, all_se_ext_fix_duration_log)
+
+# add labels - add two more variables to indicate IU group, stimulus type and extinction time 
+# for IU group
+df_fig_extinction_fix_duration_log$iu_group[1] <- "High IU"
+df_fig_extinction_fix_duration_log$iu_group[2] <- "Low IU"
+df_fig_extinction_fix_duration_log$iu_group[3] <- "High IU"
+df_fig_extinction_fix_duration_log$iu_group[4] <- "Low IU"
+df_fig_extinction_fix_duration_log$iu_group[5] <- "High IU"
+df_fig_extinction_fix_duration_log$iu_group[6] <- "Low IU"
+df_fig_extinction_fix_duration_log$iu_group[7] <- "High IU"
+df_fig_extinction_fix_duration_log$iu_group[8] <- "Low IU"
+
+# for stimulus
+df_fig_extinction_fix_duration_log$stimulus[1] <- "CS+"
+df_fig_extinction_fix_duration_log$stimulus[2] <- "CS+"
+df_fig_extinction_fix_duration_log$stimulus[3] <- "CS-"
+df_fig_extinction_fix_duration_log$stimulus[4] <- "CS-"
+df_fig_extinction_fix_duration_log$stimulus[5] <- "CS+"
+df_fig_extinction_fix_duration_log$stimulus[6] <- "CS+"
+df_fig_extinction_fix_duration_log$stimulus[7] <- "CS-"
+df_fig_extinction_fix_duration_log$stimulus[8] <- "CS-"
+
+# and re-order levels of stimulus factor so that CS+ appears on left in the graph
+df_fig_extinction_fix_duration_log$stimulus <- 
+  factor(df_fig_extinction_fix_duration_log$stimulus,levels=c("CS+","CS-"))
+
+# for early / late extinction
+df_fig_extinction_fix_duration_log$time[1] <- "Early"
+df_fig_extinction_fix_duration_log$time[2] <- "Early"
+df_fig_extinction_fix_duration_log$time[3] <- "Early"
+df_fig_extinction_fix_duration_log$time[4] <- "Early"
+df_fig_extinction_fix_duration_log$time[5] <- "Late"
+df_fig_extinction_fix_duration_log$time[6] <- "Late"
+df_fig_extinction_fix_duration_log$time[7] <- "Late"
+df_fig_extinction_fix_duration_log$time[8] <- "Late"
+
+# create figure
+fig_extinction_fix_duration_log <- 
+   ggplot(df_fig_extinction_fix_duration_log, aes(x = iu_group, y = all_mean_ext_fix_duration_log, 
+                                       fill = stimulus)) + 
+  geom_bar(stat = "identity", position = position_dodge(.6), width = .5, alpha = .85) +
+  scale_y_continuous(limits = c(0, 8), expand = c(0,0)) +
+  facet_wrap(~ time) +
+  theme_classic() + 
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_blank()) +
+  theme(axis.text.y = element_text(size = 15), axis.ticks.y = element_line(size = 1), 
+         axis.line.y = element_line(colour = "black")) +
+  theme(axis.text.x = element_text(colour = "black", size = 15), 
+         axis.ticks.x = element_blank(),
+         axis.line.x = element_line(colour = "black")) +
+  theme(axis.title = element_text(size = 20, face = "bold")) +
+  theme(legend.position = "top", 
+         legend.title = element_text(size = 20, face = "bold"), 
+         legend.box.background = element_rect(size = .75, colour = "#403250")) +
+  theme(legend.text = element_text(size = 15)) +
+  scale_fill_manual(values = c("#c45150", "#824372")) +
+  labs(fill = "Stimulus") +
+  labs(y = "Mean Fixation Duration (ms)", x = "Intolerance of Uncertainty") +
+  geom_errorbar(aes(ymin = all_mean_ext_fix_duration_log - all_se_ext_fix_duration_log, 
+                    ymax = all_mean_ext_fix_duration_log + all_se_ext_fix_duration_log), 
+                width = .15, position = position_dodge(.6), colour = "#090707", size = .3) +
+  theme(strip.background = element_blank()) +
+  theme(strip.text = element_text(size = 20, face = "bold")) 
+
+
+# obtain and check figure 
+print(fig_extinction_fix_duration_log) 
+
+# save figure to files
+ggsave(filename = "graphs/bar_plots/extinction_fix_duration_log.png", 
+       plot = fig_extinction_fix_duration_log, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+## *Saccade Amplitude* ##
+
+```{r bar graph extinction saccade amplitude}
+
+# obtain mean sacc amplitude for each group at each stimulus type and save as vector 
+# high IU CS+ early
+mean_e_ext_sacc_amplitude_high_iu_csp <- 
+  mean(df$e_ext_csp_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS+ early
+mean_e_ext_sacc_amplitude_low_iu_csp <- 
+  mean(df$e_ext_csp_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS- early
+mean_e_ext_sacc_amplitude_high_iu_csm <- 
+  mean(df$e_ext_csm_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS- early
+mean_e_ext_sacc_amplitude_low_iu_csm <- 
+  mean(df$e_ext_csm_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS+ late
+mean_l_ext_sacc_amplitude_high_iu_csp <- 
+  mean(df$l_ext_csp_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS+ late
+mean_l_ext_sacc_amplitude_low_iu_csp <- 
+  mean(df$l_ext_csp_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS- late
+mean_l_ext_sacc_amplitude_high_iu_csm <- 
+  mean(df$l_ext_csm_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS- late
+mean_l_ext_sacc_amplitude_low_iu_csm <- 
+  mean(df$l_ext_csm_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "-1"], na.rm = TRUE) 
+
+# combine into single variable called 
+all_mean_ext_sacc_amplitude <- 
+  c(mean_e_ext_sacc_amplitude_high_iu_csp, mean_e_ext_sacc_amplitude_low_iu_csp, 
+    mean_e_ext_sacc_amplitude_high_iu_csm, mean_e_ext_sacc_amplitude_low_iu_csm,
+    mean_l_ext_sacc_amplitude_high_iu_csp, mean_l_ext_sacc_amplitude_low_iu_csp, 
+    mean_l_ext_sacc_amplitude_high_iu_csm, mean_l_ext_sacc_amplitude_low_iu_csm)
+
+# obtain SD sacc amplitude for each group at each stimulus type and save as vector 
+# high IU CS+ early
+sd_e_ext_sacc_amplitude_high_iu_csp <- 
+  sd(df$e_ext_csp_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS+ early
+sd_e_ext_sacc_amplitude_low_iu_csp <- 
+  sd(df$e_ext_csp_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS- early
+sd_e_ext_sacc_amplitude_high_iu_csm <- 
+  sd(df$e_ext_csm_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS- early
+sd_e_ext_sacc_amplitude_low_iu_csm <- 
+  sd(df$e_ext_csm_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS+ late
+sd_l_ext_sacc_amplitude_high_iu_csp <- 
+  sd(df$l_ext_csp_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS+ late
+sd_l_ext_sacc_amplitude_low_iu_csp <- 
+  sd(df$l_ext_csp_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "-1"], na.rm = TRUE) 
+
+# high IU CS- late
+sd_l_ext_sacc_amplitude_high_iu_csm <- 
+  sd(df$l_ext_csm_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "1"], na.rm = TRUE) 
+
+# low IU CS- late
+sd_l_ext_sacc_amplitude_low_iu_csm <- 
+  sd(df$l_ext_csm_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "-1"], na.rm = TRUE) 
+
+# obtain SE:
+se_e_ext_sacc_amplitude_high_iu_csp <- sd_e_ext_sacc_amplitude_high_iu_csp/sqrt(length(df$id))
+se_e_ext_sacc_amplitude_low_iu_csp <- sd_e_ext_sacc_amplitude_low_iu_csp/sqrt(length(df$id))
+se_e_ext_sacc_amplitude_high_iu_csm <- sd_e_ext_sacc_amplitude_high_iu_csm/sqrt(length(df$id))
+se_e_ext_sacc_amplitude_low_iu_csm <- sd_e_ext_sacc_amplitude_low_iu_csm/sqrt(length(df$id))
+se_l_ext_sacc_amplitude_high_iu_csp <- sd_l_ext_sacc_amplitude_high_iu_csp/sqrt(length(df$id))
+se_l_ext_sacc_amplitude_low_iu_csp <- sd_l_ext_sacc_amplitude_low_iu_csp/sqrt(length(df$id))
+se_l_ext_sacc_amplitude_high_iu_csm <- sd_l_ext_sacc_amplitude_high_iu_csm/sqrt(length(df$id))
+se_l_ext_sacc_amplitude_low_iu_csm <- sd_l_ext_sacc_amplitude_low_iu_csm/sqrt(length(df$id))
+
+# combine all into single variable 
+all_se_ext_sacc_amplitude <- c(se_e_ext_sacc_amplitude_high_iu_csp, se_e_ext_sacc_amplitude_low_iu_csp,
+                             se_e_ext_sacc_amplitude_high_iu_csm, se_e_ext_sacc_amplitude_low_iu_csm,
+                             se_l_ext_sacc_amplitude_high_iu_csp, se_l_ext_sacc_amplitude_low_iu_csp, 
+                             se_l_ext_sacc_amplitude_high_iu_csm, se_l_ext_sacc_amplitude_low_iu_csm)
+
+# create new data frame for figures which includes mean and SE for each condition
+df_fig_extinction_sacc_amplitude <- data.frame(all_mean_ext_sacc_amplitude, all_se_ext_sacc_amplitude)
+
+# add labels - add two more variables to indicate IU group, stimulus type and extinction time 
+# for IU group
+df_fig_extinction_sacc_amplitude$iu_group[1] <- "High IU"
+df_fig_extinction_sacc_amplitude$iu_group[2] <- "Low IU"
+df_fig_extinction_sacc_amplitude$iu_group[3] <- "High IU"
+df_fig_extinction_sacc_amplitude$iu_group[4] <- "Low IU"
+df_fig_extinction_sacc_amplitude$iu_group[5] <- "High IU"
+df_fig_extinction_sacc_amplitude$iu_group[6] <- "Low IU"
+df_fig_extinction_sacc_amplitude$iu_group[7] <- "High IU"
+df_fig_extinction_sacc_amplitude$iu_group[8] <- "Low IU"
+
+# for stimulus
+df_fig_extinction_sacc_amplitude$stimulus[1] <- "CS+"
+df_fig_extinction_sacc_amplitude$stimulus[2] <- "CS+"
+df_fig_extinction_sacc_amplitude$stimulus[3] <- "CS-"
+df_fig_extinction_sacc_amplitude$stimulus[4] <- "CS-"
+df_fig_extinction_sacc_amplitude$stimulus[5] <- "CS+"
+df_fig_extinction_sacc_amplitude$stimulus[6] <- "CS+"
+df_fig_extinction_sacc_amplitude$stimulus[7] <- "CS-"
+df_fig_extinction_sacc_amplitude$stimulus[8] <- "CS-"
+
+# and re-order levels of stimulus factor so that CS+ appears on left in the graph
+df_fig_extinction_sacc_amplitude$stimulus <- 
+  factor(df_fig_extinction_sacc_amplitude$stimulus,levels=c("CS+","CS-"))
+
+# for early / late extinction
+df_fig_extinction_sacc_amplitude$time[1] <- "Early"
+df_fig_extinction_sacc_amplitude$time[2] <- "Early"
+df_fig_extinction_sacc_amplitude$time[3] <- "Early"
+df_fig_extinction_sacc_amplitude$time[4] <- "Early"
+df_fig_extinction_sacc_amplitude$time[5] <- "Late"
+df_fig_extinction_sacc_amplitude$time[6] <- "Late"
+df_fig_extinction_sacc_amplitude$time[7] <- "Late"
+df_fig_extinction_sacc_amplitude$time[8] <- "Late"
+
+# create figure
+fig_extinction_sacc_amplitude <- 
+  ggplot(df_fig_extinction_sacc_amplitude, aes(x = iu_group, y = all_mean_ext_sacc_amplitude, 
+                                       fill = stimulus)) + 
+  geom_bar(stat = "identity", position = position_dodge(.6), width = .5, alpha = .85) +
+  scale_y_continuous(limits = c(0, 4), expand = c(0,0)) +
+  facet_wrap(~ time) +
+  theme_classic() + 
+  theme(text = element_text(family = "serif"), 
+         plot.title = element_blank()) +
+  theme(axis.text.y = element_text(size = 15), axis.ticks.y = element_line(size = 1), 
+         axis.line.y = element_line(colour = "black")) +
+  theme(axis.text.x = element_text(colour = "black", size = 15), 
+         axis.ticks.x = element_blank(),
+         axis.line.x = element_line(colour = "black")) +
+  theme(axis.title = element_text(size = 20, face = "bold")) +
+  theme(legend.position = "top", 
+         legend.title = element_text(size = 20, face = "bold"), 
+         legend.box.background = element_rect(size = .75, colour = "#403250")) +
+  theme(legend.text = element_text(size = 15)) +
+  scale_fill_manual(values = c("#c45150", "#824372")) +
+  labs(fill = "Stimulus") +
+  labs(y = "Mean Saccade Amplitude \n (degrees/ms)", x = "Intolerance of Uncertainty") +
+  geom_errorbar(aes(ymin = all_mean_ext_sacc_amplitude - all_se_ext_sacc_amplitude,
+                    ymax = all_mean_ext_sacc_amplitude + all_se_ext_sacc_amplitude), 
+                width = .15, position = position_dodge(.6), colour = "#090707", size = .3) +
+  theme(strip.background = element_blank()) +
+  theme(strip.text = element_text(size = 20, face = "bold")) 
+
+# obtain and check figure 
+print(fig_extinction_sacc_amplitude) 
+
+# save figure to files
+ggsave(filename = "graphs/bar_plots/extinction_sacc_amplitude.png", 
+       plot = fig_extinction_sacc_amplitude, 
+       width = 20, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+## *Combine Bar Graphs* ##
+
+```{r combine all bar plots}
+
+all_bar_plots <- grid.arrange(fig_extinction_fix_count,
+                              fig_extinction_fix_duration_log,
+                              fig_extinction_sacc_amplitude, 
+                              ncol = 1)
+
+# save figure to files
+ggsave(filename = "graphs/bar_plots/all_bar_plots.png", 
+       plot = all_bar_plots, 
+       width = 20, 
+       height = 30, 
+       dpi = 300, 
+       units = "cm")
+
+```
+
+# *ANCOVAs to test Specificity of IU over Trait Anxiety* #
+
+## *ANCOVA Acquisition Fixation Count* ##
+
+```{r mixed ANCOVA fixation count acquisition}
+
+# transform wide format data into long format for mixed ANCOVA 
+df_long_acq_fix_count <- melt(df, id = c("id", "iu_group", "sticsa_total"), 
+                                 measure.vars = c("acq_csp_fix_count", 
+                                                  "acq_csm_fix_count"))
+
+# rename columns for easier interpretation
+colnames(df_long_acq_fix_count) = c("id", "iu_group", "sticsa_total", "condition", "fix_count")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_acq_fix_count$stimulus <- 
+  factor(ifelse(df_long_acq_fix_count$condition == "acq_csp_fix_count", 1, -1))
+
+# mean centre continuous covariate (STICSA)
+# to apply mean centring, first obtain average sticsa scores for all participants, 
+# and save as a variable
+df_long_acq_fix_count$sticsa_total_avg <- mean(df_long_acq_fix_count$sticsa_total)
+
+# next, subtract this average from all participants' sticsa scores,
+# and save as a variable
+df_long_acq_fix_count$sticsa_total_centred <- 
+  df_long_acq_fix_count$sticsa_total - df_long_acq_fix_count$sticsa_total_avg 
+# from this we have mean sticsa scores after centring 
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) mixed ANCOVA, 
+# with mean-cenred STICSA as covariate
+# and obtain effect size (partial eta squared)
+acq_fix_count_ancova <- 
+  anova_test(df_long_acq_fix_count, fix_count ~ iu_group * stimulus + Error(id/stimulus),
+             covariate = sticsa_total_centred, effect.size = "pes") 
+
+# obtain the mixed ANCOVA results
+get_anova_table(acq_fix_count_ancova)
+
+# results:
+# STICSA (centred): F(1,136) = 0.06, p = .808, eta2(partial) = < .001
+# IU: F(1,136) = 3.19, p = .076, eta2(partial) = .023
+# Stimulus: F(1,136) = 11.62, p < .001***, eta2(partial) = .079
+# STICSA * Stimulus: F(1,136) = 1.85, p = .177, eta2(partial) = .013
+# IU * Stimulus: F(1, 136) = 1.23, p = .269, eta2(partial) = .009
+
+# therefore, after accounting for trait anxiety, IU no longer has a significant
+# effect on fixation count in acquisition, but stimulus continues to have
+# significant effect. IU*Stimulus interaction also remains non-significant, 
+# even after controlling for trait anxiety.
+
+# write to csv
+write.csv((get_anova_table(acq_fix_count_ancova)), 
+          file = "tables/ancovas/acq_fix_count_ancova.csv")
+
+
+```
+
+## *ANCOVA Acquisition Fixation Duration (Log Transformed)* ##
+
+```{r mixed ANCOVA fixation duration acquisition log}
+
+# transform wide format data into long format for mixed ANCOVA 
+df_long_acq_fix_duration_log <- melt(df, id = c("id", "iu_group", "sticsa_total"), 
+                                 measure.vars = c("acq_csp_fix_duration_log", 
+                                                  "acq_csm_fix_duration_log"))
+
+# rename columns for easier interpretation
+colnames(df_long_acq_fix_duration_log) = c("id", "iu_group", "sticsa_total", "condition", "fix_duration_log")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_acq_fix_duration_log$stimulus <- 
+  factor(ifelse(df_long_acq_fix_duration_log$condition == "acq_csp_fix_duration_log", 1, -1))
+
+# mean centre continuous covariate (STICSA)
+# to apply mean centring, first obtain average sticsa scores for all participants, 
+# and save as a variable
+df_long_acq_fix_duration_log$sticsa_total_avg <- mean(df_long_acq_fix_duration_log$sticsa_total)
+
+# next, subtract this average from all participants' sticsa scores,
+# and save as a variable
+df_long_acq_fix_duration_log$sticsa_total_centred <- 
+  df_long_acq_fix_duration_log$sticsa_total - df_long_acq_fix_duration_log$sticsa_total_avg 
+# from this we have mean sticsa scores after centring 
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) mixed ANCOVA, 
+# with mean-cenred STICSA as covariate
+# and obtain effect size (partial eta squared)
+acq_fix_duration_ancova_log <- 
+  anova_test(df_long_acq_fix_duration_log, fix_duration_log ~ iu_group * stimulus + Error(id/stimulus),
+             covariate = sticsa_total_centred, effect.size = "pes") 
+
+# obtain the mixed ANCOVA results
+get_anova_table(acq_fix_duration_ancova_log)
+
+# results:
+# STICSA (centred): F(1,136) = 0.27, p = .606, eta2(partial) = .002
+# IU: F(1,136) = 3.89, p = .051, eta2(partial) = .028
+# Stimulus: F(1,136) = 2.94, p = .089, eta2(partial) = .021
+# STICSA * Stimulus: F(1,136) = 0.41, p = .524, eta2(partial) = .003
+# IU * Stimulus: F(1, 136) = 1.67, p = .198, eta2(partial) = .012
+
+# there are no significant effects or interactions on fixation duration in acquisition. 
+
+# write to csv
+write.csv((get_anova_table(acq_fix_duration_ancova_log)), 
+          file = "tables/ancovas/acq_fix_duration_ancova_log.csv")
+
+```
+
+## *ANCOVA Acquisition Saccade Amplitude* ##
+
+```{r mixed ANCOVA saccade amplitude acquisition}
+
+# transform wide format data into long format for mixed ANCOVA 
+df_long_acq_sacc_amplitude <- melt(df, id = c("id", "iu_group", "sticsa_total"), 
+                                 measure.vars = c("acq_csp_sacc_amplitude", 
+                                                  "acq_csm_sacc_amplitude"))
+
+# rename columns for easier interpretation
+colnames(df_long_acq_sacc_amplitude) = c("id", "iu_group", "sticsa_total", "condition", "sacc_amplitude")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_acq_sacc_amplitude$stimulus <- 
+  factor(ifelse(df_long_acq_sacc_amplitude$condition == "acq_csp_sacc_amplitude", 1, -1))
+
+# mean centre continuous covariate (STICSA)
+# to apply mean centring, first obtain average sticsa scores for all participants, 
+# and save as a variable
+df_long_acq_sacc_amplitude$sticsa_total_avg <- mean(df_long_acq_sacc_amplitude$sticsa_total)
+
+# next, subtract this average from all participants' sticsa scores,
+# and save as a variable
+df_long_acq_sacc_amplitude$sticsa_total_centred <- 
+  df_long_acq_sacc_amplitude$sticsa_total - df_long_acq_sacc_amplitude$sticsa_total_avg 
+# from this we have mean sticsa scores after centring 
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) mixed ANCOVA, 
+# with mean-cenred STICSA as covariate
+# and obtain effect size (partial eta squared)
+acq_sacc_amplitude_ancova <- 
+  anova_test(df_long_acq_sacc_amplitude, sacc_amplitude ~ iu_group * stimulus + Error(id/stimulus),
+             covariate = sticsa_total_centred, effect.size = "pes") 
+
+# obtain the mixed ANCOVA results
+get_anova_table(acq_sacc_amplitude_ancova)
+
+# results:
+# STICSA (centred): F(1,134) = 0.01, p = .935, eta2(partial) < .001
+# IU: F(1,134) = 2.13, p = .147, eta2(partial) = .016
+# Stimulus: F(1,134) = 0.94, p = .333, eta2(partial) = .007
+# STICSA * Stimulus: F(1,134) = 0.64, p = .424, eta2(partial) = .005
+# IU * Stimulus: F(1, 134) = 0.86, p = .354, eta2(partial) = .006
+
+# therefore, after accounting for trait anxiety, there continue not
+# to be any significant effects of IU, stimulus, and interaction
+# effects on saccade amplitude in acquisition. 
+
+# write to csv
+write.csv((get_anova_table(acq_sacc_amplitude_ancova)), 
+          file = "tables/ancovas/acq_sacc_amplitude_ancova.csv")
+
+```
+
+## *ANCOVA Extinction Fixation Count* ##
+
+```{r mixed ANCOVA fixation count extinction}
+
+# transform wide format data into long format for mixed ANOVA 
+df_long_ext_fix_count <- melt(df, id = c("id", "iu_group", "sticsa_total"), 
+                                 measure.vars = c("e_ext_csp_fix_count", 
+                                                  "e_ext_csm_fix_count",
+                                                  "l_ext_csp_fix_count", 
+                                                  "l_ext_csm_fix_count"))
+
+# rename columns for easier interpretation
+colnames(df_long_ext_fix_count) = c("id", "iu_group", "sticsa_total", "condition", "fix_count")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_ext_fix_count$stimulus <- 
+  factor(ifelse(df_long_ext_fix_count$condition == "e_ext_csp_fix_count" | 
+                  df_long_ext_fix_count$condition == "l_ext_csp_fix_count", 1, -1))
+
+# create column to code extinction as early (1) and late (-1)
+df_long_ext_fix_count$time <- 
+  factor(ifelse(df_long_ext_fix_count$condition == "e_ext_csp_fix_count" | 
+                  df_long_ext_fix_count$condition == "e_ext_csm_fix_count", 1, -1))
+
+# mean centre continuous covariate (STICSA)
+# to apply mean centring, first obtain average sticsa scores for all participants, 
+# and save as a variable
+df_long_ext_fix_count$sticsa_total_avg <- mean(df_long_ext_fix_count$sticsa_total)
+
+# next, subtract this average from all participants' sticsa scores,
+# and save as a variable
+df_long_ext_fix_count$sticsa_total_centred <- 
+  df_long_ext_fix_count$sticsa_total - df_long_ext_fix_count$sticsa_total_avg 
+# from this we have mean sticsa scores after centring 
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) x 2 (Time: Early, Late) mixed ANOVA, 
+# with mean-centred STICSA as covariate,
+# and obtain effect size (partial eta squared)
+ext_fix_count_ancova <- 
+  anova_test(df_long_ext_fix_count, 
+             fix_count ~ iu_group * stimulus * time + Error(id/(stimulus*time)),
+             covariate = sticsa_total_centred, effect.size = "pes") 
+
+# obtain the mixed ANCOVA results
+get_anova_table(ext_fix_count_ancova)
+
+# results:
+# STICSA (centred): F(1,136) = 0.43, p = .512, eta2(partial) = .003
+# IU: F(1,136) = 4.36, p = .039*, eta2(partial) = .031
+# Stimulus: F(1,136) = 4.21, p = .042*, eta2(partial) = .030
+# Time: F(1,136) = 5.69, p = .018 *, eta2(partial) = .040
+# STICSA * Stimulus: F(1,136) = 1.10, p = .297, eta2(partial) = .008
+# IU * Stimulus: F(1, 136) = 4.56, p = .035*, eta2(partial) = .032
+# STICSA* Time: F(1,136) = 0.00, p = .982, eta2(partial) < .001
+# IU * Time: F(1,136) = 3.49, p = .064, eta2(partial) = . 025
+# Stimulus * Time: F(1,136) = 0.07, p = .797, eta2(partial) < .001
+# STICSA * Stimulus * Time: F(1,136) = 0.90, p = .344, eta2(partial) = .007
+# IU * Stimulus * Time: F(1,136) = 0.04, p = .834, eta2(partial) < .001
+
+# therefore, after accounting for trait anxiety, IU, Stimulus, and Time 
+# continue to have a significant effect on fixation duration in acquisition. 
+# there is no longer a significant interaction effect of IU*Time, 
+# but there is now a significant interaction effect of IU*stimulus
+
+# write to csv
+write.csv((get_anova_table(ext_fix_count_ancova)), 
+          file = "tables/ancovas/ext_fix_count_ancova.csv")
+
+# as there was a significant IU*Stimulus interaction (which differed from observed
+# mixed ANOVA), conduct simple main effects analysis:
+## obtain effect of IU at each level of stimulus 
+simple_effects_ext_fix_count_iu_ancova <- df_long_ext_fix_count %>%
+  group_by(stimulus) %>%
+  anova_test(dv = fix_count, wid = id, between = iu_group, within = time,
+             covariate = sticsa_total_centred, effect.size = "pes") %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+
+# get the output
+simple_effects_ext_fix_count_iu_ancova
+
+# results: 
+# The effect of IU group on CS+ was not significant [F(1,136) = 2.17, p = .1.00, pes = .016]
+# the effect of IU group on CS- was not significant [F(1,136) = 6.66, p = .110, pes = .047]
+
+# as there was significant IU-stimulus interaction that was
+# not observed before in mixed ANOVA, obtain estimated
+# marginal means to be reported:
+
+## IU-Stimulus interaction
+# obtain emmeans
+emmeans_ext_fix_count_ancova_iu_stimulus <- df_long_ext_fix_count %>%
+  group_by(stimulus) %>%
+  emmeans_test(fix_count ~ iu_group, covariate = sticsa_total_centred) %>%
+  get_emmeans()
+emmeans_ext_fix_count_ancova_iu_stimulus
+
+# save them as variables
+emmeans_ext_fix_count_ancova_high_iu_csp <- 7.88
+emmeans_ext_fix_count_ancova_high_iu_csm <- 8.41
+emmeans_ext_fix_count_ancova_low_iu_csp <- 6.86
+emmeans_ext_fix_count_ancova_low_iu_csm <- 6.88
+  
+```
+
+## *ANCOVA Extinction Fixation Duration (Log Transformed)* ##
+
+```{r mixed ANCOVA fixation duration extinction log}
+
+# transform wide format data into long format for mixed ANCOVA 
+df_long_ext_fix_duration_log <- melt(df, id = c("id", "iu_group", "sticsa_total"), 
+                                 measure.vars = c("e_ext_csp_fix_duration_log", 
+                                                  "e_ext_csm_fix_duration_log",
+                                                  "l_ext_csp_fix_duration_log", 
+                                                  "l_ext_csm_fix_duration_log"))
+
+# rename columns for easier interpretation
+colnames(df_long_ext_fix_duration_log) = c("id", "iu_group", "sticsa_total", "condition", "fix_duration_log")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_ext_fix_duration_log$stimulus <- 
+  factor(ifelse(df_long_ext_fix_duration_log$condition == "e_ext_csp_fix_duration_log" | 
+                  df_long_ext_fix_duration_log$condition == "l_ext_csp_fix_duration_log", 1, -1))
+
+# create column to code extinction as early (1) and late (-1)
+df_long_ext_fix_duration_log$time <- 
+  factor(ifelse(df_long_ext_fix_duration_log$condition == "e_ext_csp_fix_duration_log" | 
+                  df_long_ext_fix_duration_log$condition == "e_ext_csm_fix_duration_log", 1, -1))
+
+# mean centre continuous covariate (STICSA)
+# to apply mean centring, first obtain average sticsa scores for all participants, 
+# and save as a variable
+df_long_ext_fix_duration_log$sticsa_total_avg <- mean(df_long_ext_fix_duration_log$sticsa_total)
+
+# next, subtract this average from all participants' sticsa scores,
+# and save as a variable
+df_long_ext_fix_duration_log$sticsa_total_centred <- 
+  df_long_ext_fix_duration_log$sticsa_total - df_long_ext_fix_duration_log$sticsa_total_avg 
+# from this we have mean sticsa scores after centring 
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) x 2 (Time: Early, Late) mixed ANOVA, 
+# with mean-centred STICSA as covariate,
+# and obtain effect size (partial eta squared)
+ext_fix_duration_ancova_log <- 
+  anova_test(df_long_ext_fix_duration_log, 
+             fix_duration_log ~ iu_group * stimulus * time + Error(id/(stimulus*time)),
+             covariate = sticsa_total_centred, effect.size = "pes") 
+
+# obtain the mixed ANCOVA results
+get_anova_table(ext_fix_duration_ancova_log)
+
+# results:
+# STICSA (centred): F(1,136) = 0.01, p = .972, eta2(partial) < .001
+# IU: F(1,136) = 8.37, p = .004**, eta2(partial) = .058
+# Stimulus: F(1,136) = 0.51, p = .475, eta2(partial) = .004
+# Time: F(1,136) = 4.36, p = .039*, eta2(partial) = .031
+# STICSA * Stimulus: F(1,136) = 0.20, p = .659, eta2(partial) = .001
+# IU * Stimulus: F(1, 136) = 5.36, p = .022*, eta2(partial) = .038
+# STICSA* Time: F(1,136) = 0.33, p = .567, eta2(partial) = .002
+# IU * Time: F(1,136) = 0.50, p = .480, eta2(partial) = . 004
+# Stimulus * Time: F(1,136) = 0.17, p = .677, eta2(partial) = .001
+# STICSA * Stimulus * Time: F(1,136) = 0.22, p = .639, eta2(partial) = .002
+# IU * Stimulus * Time: F(1,136) = 0.34, p = .539, eta2(partial) = .003
+
+# there were significant main effects of IU, time,
+# and a significant IU-stimulus interaction on fixation duration in extinction,
+# and no further main effects or interactions. 
+
+# write to csv
+write.csv((get_anova_table(ext_fix_duration_ancova_log)), 
+          file = "tables/ancovas/ext_fix_duration_ancova_log.csv")
+
+# as there was a significant IU*Stimulus interaction, conduct simple 
+# main effects analysis:
+## obtain effect of IU at each level of stimulus 
+simple_effects_ext_fix_duration_iu_ancova <- df_long_ext_fix_duration_log %>%
+  group_by(stimulus) %>%
+  anova_test(dv = fix_duration_log, wid = id, between = iu_group, within = time,
+             covariate = sticsa_total_centred, effect.size = "pes") %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+
+# get the output
+simple_effects_ext_fix_duration_iu_ancova
+
+# results: 
+# The effect of IU group on CS+ was not significant [F(1,136) = 4.70, p = .320, pes = .033]
+# the effect of IU group on CS- was significant [F(1,136) = 11,19, p = .01, pes = .076]
+
+```
+
+## *ANCOVA Extinction Saccade Amplitude* ##
+
+```{r mixed ANCOVA saccade amplitude extinction}
+
+# transform wide format data into long format for mixed ANCOVA 
+df_long_ext_sacc_amplitude <- melt(df, id = c("id", "iu_group", "sticsa_total"), 
+                                 measure.vars = c("e_ext_csp_sacc_amplitude", 
+                                                  "e_ext_csm_sacc_amplitude",
+                                                  "l_ext_csp_sacc_amplitude", 
+                                                  "l_ext_csm_sacc_amplitude"))
+
+# rename columns for easier interpretation
+colnames(df_long_ext_sacc_amplitude) = c("id", "iu_group", "sticsa_total", "condition", "sacc_amplitude")
+
+# create column to code stimulus as CS+ (1) and CS- (-1)
+df_long_ext_sacc_amplitude$stimulus <- 
+  factor(ifelse(df_long_ext_sacc_amplitude$condition == "e_ext_csp_sacc_amplitude" | 
+                  df_long_ext_sacc_amplitude$condition == "l_ext_csp_sacc_amplitude", 1, -1))
+
+# create column to code extinction as early (1) and late (-1)
+df_long_ext_sacc_amplitude$time <- 
+  factor(ifelse(df_long_ext_sacc_amplitude$condition == "e_ext_csp_sacc_amplitude" | 
+                  df_long_ext_sacc_amplitude$condition == "e_ext_csm_sacc_amplitude", 1, -1))
+
+# mean centre continuous covariate (STICSA)
+# to apply mean centring, first obtain average sticsa scores for all participants, 
+# and save as a variable
+df_long_ext_sacc_amplitude$sticsa_total_avg <- mean(df_long_ext_sacc_amplitude$sticsa_total)
+
+# next, subtract this average from all participants' sticsa scores,
+# and save as a variable
+df_long_ext_sacc_amplitude$sticsa_total_centred <- 
+  df_long_ext_sacc_amplitude$sticsa_total - df_long_ext_sacc_amplitude$sticsa_total_avg 
+# from this we have mean sticsa scores after centring 
+
+# compute 2(IU: High & Low) x 2 (Stimulus: CS+, CS-) x 2 (Time: Early, Late) mixed ANOVA, 
+# with mean-centred STICSA as covariate,
+# and obtain effect size (partial eta squared)
+ext_sacc_amplitude_ancova <- 
+  anova_test(df_long_ext_sacc_amplitude, 
+             sacc_amplitude ~ iu_group * stimulus * time + Error(id/(stimulus*time)),
+             covariate = sticsa_total_centred, effect.size = "pes") 
+
+# obtain the mixed ANCOVA results
+get_anova_table(ext_sacc_amplitude_ancova)
+
+# results:
+# STICSA (centred): F(1,133) = 1.13, p = .289, eta2(partial) = .008
+# IU: F(1,133) = 1.03, p = .313, eta2(partial) = .008
+# Stimulus: F(1,133) = 0.75, p = .387, eta2(partial) = .006
+# Time: F(1,133) = 0.26, p = .615, eta2(partial) = .002
+# STICSA * Stimulus: F(1,133) = 0.37, p = .544, eta2(partial) = .003
+# IU * Stimulus: F(1, 133) = 2.04, p = .156, eta2(partial) = .015
+# STICSA* Time: F(1,133) = 1.36, p = .246, eta2(partial) = .010
+# IU * Time: F(1,133) = 0.80, p = .372, eta2(partial) = . 006
+# Stimulus * Time: F(1,133) = 0.07, p = .790, eta2(partial) = .001
+# STICSA * Stimulus * Time: F(1,133) = 0.42, p = .517, eta2(partial) = .003
+# IU * Stimulus * Time: F(1,133) = 0.10, p = .320, eta2(partial) = .007
+
+# therefore, even after accounting for trait anxiety, there continue
+# to be no significant effects or interactions on saccade amplitude
+# in extinction
+
+# write to csv
+write.csv((get_anova_table(ext_sacc_amplitude_ancova)), 
+          file = "tables/ancovas/ext_sacc_amplitude_ancova.csv")
+
+```
+
+# *Assumption Checks* #
+
+```{r assumption checks}
+
+############ assumptions of mixed ANOVA:
+# categorical IVs, interval/ratio DVs
+# outcome variable(s) should be approximately normally distributed
+# no significant outliers in the groups
+# homogeneity of variances
+# sphericity (not applicable in this case, as no within-subjects factors with > 3 levels)
+# homogeneity of variance-covariance matrices 
+
+############ additional assumptions of ANCOVA:
+# independence of covariate and IVs
+# homogeneity of regression slopes
+# linearity between covariate and outcome variable(s) at each level of grouping variables
+
+
+```
+
+## *Normality of Outcome Variables* ##
+
+```{r assumption check normality}
+
+############### note: variables coded as follows:
+#### IU
+# high IU: 1
+# low IU: -1
+
+#### stimulus
+# CS+: 1
+# CS-: -1
+
+#### time
+# early: 1
+# late: -1
+
+######### acquisition fix count
+## check QQ plot
+qqplot_acq_fix_count <- ggqqplot(df_long_acq_fix_count, "fix_count", ggtheme = theme_classic()) +
+           facet_grid(stimulus ~ iu_group, labeller = "label_both")
+qqplot_acq_fix_count
+
+## check shapiro
+shapiro_acq_fix_count <- df_long_acq_fix_count %>%
+  group_by(iu_group, stimulus) %>%
+  shapiro_test(fix_count)
+shapiro_acq_fix_count
+# p-values < .05: data violate assumption of normality
+
+
+######### extinction fix count
+## check QQ plot
+qqplot_ext_fix_count <- ggqqplot(df_long_ext_fix_count, "fix_count", ggtheme = theme_classic()) +
+           facet_grid(stimulus + time ~ iu_group, labeller = "label_both")
+qqplot_ext_fix_count
+
+## check shapiro
+shapiro_ext_fix_count <-df_long_ext_fix_count %>%
+  group_by(iu_group, stimulus, time) %>%
+  shapiro_test(fix_count)
+shapiro_ext_fix_count
+# p-values < .05: data violate assumption of normality for all except:
+# high IU late extinction CS- and low IU early extinction CS+ (ps > .05)
+
+######### acquisition fix duration log
+## check QQ plot
+qqplot_acq_fix_duration_log <- ggqqplot(df_long_acq_fix_duration_log, "fix_duration_log", ggtheme = theme_classic()) +
+           facet_grid(stimulus ~ iu_group, labeller = "label_both")
+qqplot_acq_fix_duration_log
+
+## check shapiro
+shapiro_acq_fix_duration_log <- df_long_acq_fix_duration_log %>%
+  group_by(iu_group, stimulus) %>%
+  shapiro_test(fix_duration_log)
+shapiro_acq_fix_duration_log
+# p-values > .05: data meet assumption of normality for all except:
+# low IU CS+ (p = .039)
+
+######### extinction fix duration log
+## check QQ plot
+qqplot_ext_fix_duration_log <- ggqqplot(df_long_ext_fix_duration_log, "fix_duration_log", ggtheme = theme_classic()) +
+           facet_grid(stimulus + time ~ iu_group, labeller = "label_both")
+qqplot_ext_fix_duration_log
+
+## check shapiro
+shapiro_ext_fix_duration_log <- df_long_ext_fix_duration_log %>%
+  group_by(iu_group, stimulus, time) %>%
+  shapiro_test(fix_duration_log)
+shapiro_ext_fix_duration_log
+# p-values > .05: data meet assumption of normality for all except:
+# low IU CS- early extinction and high IU CS- late extinction
+
+######### acquisition sacc amplitude
+## check QQ plot
+qqplot_acq_sacc_amplitude <- ggqqplot(df_long_acq_sacc_amplitude, "sacc_amplitude", ggtheme = theme_classic()) +
+           facet_grid(stimulus ~ iu_group, labeller = "label_both")
+qqplot_acq_sacc_amplitude
+
+## check shapiro
+shapiro_acq_sacc_amplitude <- df_long_acq_sacc_amplitude %>%
+  group_by(iu_group, stimulus) %>%
+  shapiro_test(sacc_amplitude)
+shapiro_acq_sacc_amplitude
+# p-values < .05: data violate assumption of normality
+
+######### extinction sacc amplitude
+## check QQ plot
+qqplot_ext_sacc_amplitude <- ggqqplot(df_long_ext_sacc_amplitude, "sacc_amplitude", ggtheme = theme_classic()) +
+           facet_grid(stimulus + time ~ iu_group, labeller = "label_both")
+qqplot_ext_sacc_amplitude
+
+## check shapiro
+shapiro_ext_sacc_amplitude <- df_long_ext_sacc_amplitude %>%
+  group_by(iu_group, stimulus, time) %>%
+  shapiro_test(sacc_amplitude)
+shapiro_ext_sacc_amplitude
+# p-values < .05: data violate assumption of normality
+
+```
+
+## *Outliers* ##
+
+```{r assumption checks outliers}
+
+# identify outliers using identify_outliers function from rstatix package,
+# where third quartile + 3xIQR or below first quartile - 3xIQR 
+# are considered as extreme points (or extreme outliers).
+
+## acquisition fix count
+outliers_acq_fix_count <- df_long_acq_fix_count %>%
+  group_by(iu_group, stimulus) %>%
+  identify_outliers(fix_count)
+outliers_acq_fix_count
+# no extreme outliers
+
+## extinction fix count
+outliers_ext_fix_count <- 
+df_long_ext_fix_count %>%
+  group_by(iu_group, stimulus, time) %>%
+  identify_outliers(fix_count)
+outliers_ext_fix_count
+# two extreme outliers: ppt 33 and 86
+
+# acquisition fix duration log
+outliers_acq_fix_duration_log <- df_long_acq_fix_duration_log %>%
+  group_by(iu_group, stimulus) %>%
+  identify_outliers(fix_duration_log)
+# no extreme outliers
+
+outliers_acq_fix_duration_log
+## extinction fix duration log
+outliers_ext_fix_duration_log <- df_long_ext_fix_duration_log %>%
+  group_by(iu_group, stimulus, time) %>%
+  identify_outliers(fix_duration_log)
+outliers_ext_fix_duration_log
+# no extreme outliers
+
+## acquisition sacc amplitude
+outliers_acq_sacc_amplitude <- df_long_acq_sacc_amplitude %>%
+  group_by(iu_group, stimulus) %>%
+  identify_outliers(sacc_amplitude)
+outliers_acq_sacc_amplitude
+# no extreme outliers
+
+## extinction sacc amplitude
+outliers_ext_sacc_amplitude <- df_long_ext_sacc_amplitude %>%
+  group_by(iu_group, stimulus, time) %>%
+  identify_outliers(sacc_amplitude)
+outliers_ext_sacc_amplitude
+# two extreme outliers: ppt 16 and 105
+
+```
+
+## *Homogeneity of Variance* ##
+
+```{r checking homogeneity of variance}
+
+# this will be done using levene's test
+
+## acquisition fix count
+levene_acq_fix_count <- df_long_acq_fix_count %>%
+  group_by(stimulus) %>%
+  levene_test(fix_count ~ iu_group)
+levene_acq_fix_count
+# p-values > .05, data meet assumption of homogeneity of variance
+
+## extinction fix count
+levene_ext_fix_count <-df_long_ext_fix_count %>%
+  group_by(stimulus, time) %>%
+  levene_test(fix_count ~ iu_group)
+levene_ext_fix_count
+# p-values > .05, data meet assumption of homogeneity of variance
+
+# acquisition fix duration log
+levene_acq_fix_duration_log <- df_long_acq_fix_duration_log %>%
+  group_by(stimulus) %>%
+  levene_test(fix_duration_log ~ iu_group)
+levene_acq_fix_duration_log
+# p-values > .05, data meet assumption of homogeneity of variance
+
+## extinction fix count
+levene_ext_fix_duration_log <- df_long_ext_fix_duration_log %>%
+  group_by(stimulus, time) %>%
+  levene_test(fix_duration_log ~ iu_group)
+levene_ext_fix_duration_log
+# p-value for early extinction and CS+ > .05, data meet assumption of homogeneity of variance
+# p-values for early extinction and CS-, and late extinction and both stimulli < .05, 
+# data violate assumption of homogeneity of variance
+
+## acquisition sacc amplitude
+levene_acq_sacc_amplitude <- df_long_acq_sacc_amplitude %>%
+  group_by(stimulus) %>%
+  levene_test(sacc_amplitude ~ iu_group)
+levene_acq_sacc_amplitude
+# p-values > .05, data meet assumption of homogeneity of variance
+
+## extinction sacc amplitude
+levene_ext_sacc_amplitude <- df_long_ext_sacc_amplitude %>%
+  group_by(stimulus, time) %>%
+  levene_test(sacc_amplitude ~ iu_group)
+levene_ext_sacc_amplitude
+# p-values > .05, data meet assumption of homogeneity of variance
+
+# however, in large samples, levene's test can be sig even when group variances
+# are not very different.
+
+```
+
+## *Homogeneity of Variance-Covariance Matrices* ##
+
+```{r homogeneity of variance-covariance matrices}
+
+# this tests whether covariance matrices are equal across cells formed by
+# between-subjects factor (IU)
+
+# use Box's M (however, this is highly sensitive, so unless p < .001 and sample
+# sizes are unequal, can ignore it)
+
+box_m_acq_fix_count <- 
+box_m(df_long_acq_fix_count[, "fix_count", drop = FALSE], df_long_acq_fix_count$iu_group)
+box_m_acq_fix_count
+# p-value > .05, data meet assumption of homogeneity of variance-covariance matrices
+
+box_m_ext_fix_count <- 
+box_m(df_long_ext_fix_count[, "fix_count", drop = FALSE], df_long_ext_fix_count$iu_group)
+box_m_ext_fix_count
+# p-value > .05, data meet assumption of homogeneity of variance-covariance matrices
+
+bom_m_acq_fix_duration_log <-
+box_m(df_long_acq_fix_duration_log[, "fix_duration_log", drop = FALSE], df_long_acq_fix_duration_log$iu_group)
+bom_m_acq_fix_duration_log
+# p-value > .05, data meet assumption of homogeneity of variance-covariance matrices
+
+box_m_ext_fix_duration_log <-
+box_m(df_long_ext_fix_duration_log[, "fix_duration_log", drop = FALSE], df_long_ext_fix_duration_log$iu_group)
+box_m_ext_fix_duration_log
+# p-value < .05, data violate assumption of homogeneity of variance-covariance matrices
+
+```
+
+## *Independence of Covariate and IVs* ##
+
+### *Fixation Count* ###
+
+#### *Acquisition* ####
+
+```{r independence of covariate and IVs fix count acquisition}
+
+# sticsa and iu group
+t_test_independence_sticsa_iu_group_acq_fix_count <- 
+  t.test(
+    df_long_acq_fix_count[df_long_acq_fix_count$iu_group == "1", "sticsa_total_centred"],
+    df_long_acq_fix_count[df_long_acq_fix_count$iu_group == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_iu_group_acq_fix_count
+# p < .05 : sticsa is not independent of iu group 
+
+# sticsa and stimulus
+t_test_independence_sticsa_stimulus_acq_fix_count <- 
+  t.test(
+    df_long_acq_fix_count[df_long_acq_fix_count$stimulus == "1", "sticsa_total_centred"],
+    df_long_acq_fix_count[df_long_acq_fix_count$stimulus == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_stimulus_acq_fix_count
+# p > .05 - sticsa is independent of stimulus
+
+```
+
+#### *Extinction* ####
+
+```{r independence of covariate and IVs fix count extinction}
+
+# sticsa and iu group
+t_test_independence_sticsa_iu_group_ext_fix_count <- 
+  t.test(
+    df_long_ext_fix_count[df_long_ext_fix_count$iu_group == "1", "sticsa_total_centred"],
+    df_long_ext_fix_count[df_long_ext_fix_count$iu_group == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_iu_group_ext_fix_count
+# p < .05 : sticsa is not independent of iu group 
+
+# sticsa and stimulus
+t_test_independence_sticsa_stimulus_ext_fix_count <- 
+  t.test(
+    df_long_ext_fix_count[df_long_ext_fix_count$stimulus == "1", "sticsa_total_centred"],
+    df_long_ext_fix_count[df_long_ext_fix_count$stimulus == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_stimulus_ext_fix_count
+# p > .05 - sticsa is independent of stimulus
+
+# sticsa and time
+t_test_independence_sticsa_time_ext_fix_count <- 
+  t.test(
+    df_long_ext_fix_count[df_long_ext_fix_count$time == "1", "sticsa_total_centred"],
+    df_long_ext_fix_count[df_long_ext_fix_count$time == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_time_ext_fix_count
+# p > .05 - sticsa is independent of time
+
+```
+
+### *Fixation Duration (Log Transformed)* ###
+
+#### *Acquisition* ####
+
+```{r independence of covariate and IVs fix duration log acquisition}
+
+# sticsa and iu group
+t_test_independence_sticsa_iu_group_acq_fix_duration_log <- 
+  t.test(
+    df_long_acq_fix_duration_log[df_long_acq_fix_duration_log$iu_group == "1", "sticsa_total_centred"],
+    df_long_acq_fix_duration_log[df_long_acq_fix_duration_log$iu_group == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_iu_group_acq_fix_duration_log
+# p < .05 : sticsa is not independent of iu group 
+
+# sticsa and stimulus
+t_test_independence_sticsa_stimulus_acq_fix_duration_log <- 
+  t.test(
+    df_long_acq_fix_duration_log[df_long_acq_fix_duration_log$stimulus == "1", "sticsa_total_centred"],
+    df_long_acq_fix_duration_log[df_long_acq_fix_duration_log$stimulus == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_stimulus_acq_fix_duration_log
+# p > .05 - sticsa is independent of stimulus
+
+```
+
+#### *Extinction* ####
+
+```{r independence of covariate and IVs fix duration log extinction}
+
+# sticsa and iu group
+t_test_independence_sticsa_iu_group_ext_fix_duration_log <- 
+  t.test(
+    df_long_ext_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "1", "sticsa_total_centred"],
+    df_long_ext_fix_duration_log[df_long_ext_fix_duration_log$iu_group == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_iu_group_ext_fix_duration_log
+# p < .05 : sticsa is not independent of iu group 
+
+# sticsa and stimulus
+t_test_independence_sticsa_stimulus_ext_fix_duration_log <- 
+  t.test(
+    df_long_ext_fix_duration_log[df_long_ext_fix_duration_log$stimulus == "1", "sticsa_total_centred"],
+    df_long_ext_fix_duration_log[df_long_ext_fix_duration_log$stimulus == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_stimulus_ext_fix_duration_log
+# p > .05 - sticsa is independent of stimulus
+
+# sticsa and time
+t_test_independence_sticsa_time_ext_fix_duration <- 
+  t.test(
+    df_long_ext_fix_duration_log[df_long_ext_fix_duration_log$time == "1", "sticsa_total_centred"],
+    df_long_ext_fix_duration_log[df_long_ext_fix_duration_log$time == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_time_ext_fix_duration
+# p > .05 - sticsa is independent of time
+
+```
+
+### *Saccade Amplitude* ###
+
+#### *Acquisition* ####
+
+```{r independence of covariate and IVs sacc amplitude acquisition}
+
+# sticsa and iu group
+t_test_independence_sticsa_iu_group_acq_sacc_amplitude <- 
+  t.test(
+    df_long_acq_sacc_amplitude[df_long_acq_sacc_amplitude$iu_group == "1", "sticsa_total_centred"],
+    df_long_acq_sacc_amplitude[df_long_acq_sacc_amplitude$iu_group == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_iu_group_acq_sacc_amplitude
+# p < .05 : sticsa is not independent of iu group 
+
+# sticsa and stimulus
+t_test_independence_sticsa_stimulus_acq_sacc_amplitude <- 
+  t.test(
+    df_long_acq_sacc_amplitude[df_long_acq_sacc_amplitude$stimulus == "1", "sticsa_total_centred"],
+    df_long_acq_sacc_amplitude[df_long_acq_sacc_amplitude$stimulus == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_stimulus_acq_sacc_amplitude
+# p > .05 - sticsa is independent of stimulus
+
+```
+
+#### *Extinction* ####
+
+```{r independence of covariate and IVs sacc_amplitude extinction}
+
+# sticsa and iu group
+t_test_independence_sticsa_iu_group_ext_sacc_amplitude <- 
+  t.test(
+    df_long_ext_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "1", "sticsa_total_centred"],
+    df_long_ext_sacc_amplitude[df_long_ext_sacc_amplitude$iu_group == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_iu_group_ext_sacc_amplitude
+# p < .05 : sticsa is not independent of iu group 
+
+# sticsa and stimulus
+t_test_independence_sticsa_stimulus_ext_sacc_amplitude <- 
+  t.test(
+    df_long_ext_sacc_amplitude[df_long_ext_sacc_amplitude$stimulus == "1", "sticsa_total_centred"],
+    df_long_ext_sacc_amplitude[df_long_ext_sacc_amplitude$stimulus == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_stimulus_ext_sacc_amplitude
+# p > .05 - sticsa is independent of stimulus
+
+# sticsa and time
+t_test_independence_sticsa_time_ext_sacc_amplitude <- 
+  t.test(
+    df_long_ext_sacc_amplitude[df_long_ext_sacc_amplitude$time == "1", "sticsa_total_centred"],
+    df_long_ext_sacc_amplitude[df_long_ext_sacc_amplitude$time == "-1", "sticsa_total_centred"], 
+    var.equal = TRUE
+    )
+t_test_independence_sticsa_time_ext_sacc_amplitude
+# p > .05 - sticsa is independent of time
+
+```
+
+## *Homogeneity of Regression Slopes* ##
+
+```{r homogeneity of regression slopes}
+
+####### check homogeneity of regression slopes
+
+###### fixation count
+### acquisition
+homogeneity_regression_slopes_acq_fix_count <-
+df_long_acq_fix_count %>%
+    anova_test(fix_count ~ sticsa_total_centred + iu_group + stimulus + iu_group*stimulus + 
+                 sticsa_total_centred*iu_group + sticsa_total_centred*stimulus +
+                 sticsa_total_centred*iu_group*stimulus)
+  homogeneity_regression_slopes_acq_fix_count
+# p-values > .05: no interactions between STICSA and grouping variables 
+
+### extinction
+homogeneity_regression_slopes_ext_fix_count <-
+df_long_ext_fix_count %>%
+    anova_test(fix_count ~ sticsa_total_centred + iu_group + stimulus + time + iu_group*stimulus + 
+                 iu_group*time + stimulus*time + sticsa_total_centred*iu_group + 
+                 sticsa_total_centred*stimulus + sticsa_total_centred*time +
+                 sticsa_total_centred*iu_group*stimulus + sticsa_total_centred*iu_group*stimulus*time)
+homogeneity_regression_slopes_ext_fix_count
+# p-values > .05: no interactions between STICSA and grouping variables 
+
+
+###### fixation duration
+### acquisition
+homogeneity_regression_slopes_acq_fix_duration_log <-
+df_long_acq_fix_duration_log %>%
+    anova_test(fix_duration_log ~ sticsa_total_centred + iu_group + stimulus + iu_group*stimulus + 
+                 sticsa_total_centred*iu_group + sticsa_total_centred*stimulus +
+                 sticsa_total_centred*iu_group*stimulus)
+homogeneity_regression_slopes_acq_fix_duration_log
+# p-values > .05: no interactions between STICSA and grouping variables 
+
+### extinction
+homogeneity_regression_slopes_ext_fix_duration_log <-
+df_long_ext_fix_duration_log %>%
+    anova_test(fix_duration_log ~ sticsa_total_centred + iu_group + stimulus + time + iu_group*stimulus + 
+                 iu_group*time + stimulus*time + sticsa_total_centred*iu_group + 
+                 sticsa_total_centred*stimulus + sticsa_total_centred*time +
+                 sticsa_total_centred*iu_group*stimulus + sticsa_total_centred*iu_group*stimulus*time)
+homogeneity_regression_slopes_ext_fix_duration_log
+# p-values > .05: no interactions between STICSA and grouping variables 
+
+
+###### saccade amplitude
+### acquisition
+homogeneity_regression_slopes_acq_sacc_amplitude <-
+df_long_acq_sacc_amplitude %>%
+    anova_test(sacc_amplitude ~ sticsa_total_centred + iu_group + stimulus + iu_group*stimulus + 
+                 sticsa_total_centred*iu_group + sticsa_total_centred*stimulus +
+                 sticsa_total_centred*iu_group*stimulus)
+homogeneity_regression_slopes_acq_sacc_amplitude
+# p-values > .05: no interactions between STICSA and grouping variables 
+
+### extinction
+homogeneity_regression_slopes_ext_sacc_amplitude <-
+df_long_ext_sacc_amplitude %>%
+    anova_test(sacc_amplitude ~ sticsa_total_centred + iu_group + stimulus + time + iu_group*stimulus + 
+                 iu_group*time + stimulus*time + sticsa_total_centred*iu_group + 
+                 sticsa_total_centred*stimulus + sticsa_total_centred*time +
+                 sticsa_total_centred*iu_group*stimulus + sticsa_total_centred*iu_group*stimulus*time)
+homogeneity_regression_slopes_ext_sacc_amplitude
+# p-values > .05: no interactions between STICSA and grouping variables, except for
+# sticsa*iu p = .005
+
+```
+
+## *Linearity Between Covariate and Outcome Variables* ##
+
+### *Fixation Count* ###
+
+#### *Acquisition* ####
+
+```{r linearity covariate and outcome variables fixation count acq}
+
+## this is at each level of grouping variable. 
+# check by computing grouped scatterplot of covariate and outcome variable 
+
+# sticsa and IU group
+scatterplot_acq_fix_count_sticsa_centred_by_iu <- 
+  ggplot(df_long_acq_fix_count,aes(x = sticsa_total_centred, y = fix_count, 
+                                   colour = iu_group)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Fixation Count in Acquisition by IU Group",
+       x = "STICSA Total (Centred)", 
+       y = "Acquisition Fixation Count") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+    labs(colour = "IU Group") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_acq_fix_count_sticsa_centred_by_iu)
+# relationship between STICSA and fixation count appears linear at both levels of IU
+
+# sticsa and stimulus
+scatterplot_acq_fix_count_sticsa_centred_by_stimulus <- 
+  ggplot(df_long_acq_fix_count,aes(x = sticsa_total_centred, y = fix_count, 
+                                   colour = stimulus)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Fixation Count in Acquisition by Stimulus",
+       x = "STICSA Total (Centred)", 
+       y = "Acquisition Fixation Count") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("CS-", "CS+")) +
+    labs(colour = "Stimulus") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_acq_fix_count_sticsa_centred_by_stimulus)
+# relationship between STICSA and fixation count appears linear at both levels of stimulus
+
+```
+
+#### *Extinction* ####
+
+```{r linearity covariate and outcome variables fixation count ext}
+
+# sticsa and IU group
+scatterplot_ext_fix_count_sticsa_centred_by_iu <- 
+  ggplot(df_long_ext_fix_count,aes(x = sticsa_total_centred, y = fix_count, 
+                                   colour = iu_group)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Fixation Count in Extinction by IU Group",
+       x = "STICSA Total (Centred)", 
+       y = "Extinction Fixation Count") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+    labs(colour = "IU Group") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_ext_fix_count_sticsa_centred_by_iu)
+# relationship between STICSA and fixation count appears linear at both levels of IU
+
+# sticsa and stimulus
+scatterplot_ext_fix_count_sticsa_centred_by_stimulus <- 
+  ggplot(df_long_ext_fix_count,aes(x = sticsa_total_centred, y = fix_count, 
+                                   colour = stimulus)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Fixation Count in Extinction by Stimulus",
+       x = "STICSA Total (Centred)", 
+       y = "Extinction Fixation Count") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("CS-", "CS+")) +
+    labs(colour = "Stimulus") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_ext_fix_count_sticsa_centred_by_stimulus)
+# relationship between STICSA and fixation count appears linear at both levels of stimulus
+
+# sticsa and time
+scatterplot_ext_fix_count_sticsa_centred_by_time <- 
+  ggplot(df_long_ext_fix_count,aes(x = sticsa_total_centred, y = fix_count, 
+                                   colour = time)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Fixation Count in Extinction by Time",
+       x = "STICSA Total (Centred)", 
+       y = "Extinction Fixation Count") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("Late", "Early")) +
+    labs(colour = "Time") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_ext_fix_count_sticsa_centred_by_time)
+# relationship between STICSA and fixation count appears linear at both levels of time
+
+
+```
+
+### *Fixation Duration - Log Transformed* ###
+
+#### *Acquisition* ####
+
+```{r linearity covariate and outcome variables fixation duration log acq}
+
+# sticsa and IU group
+scatterplot_acq_fix_duration_log_sticsa_centred_by_iu <- 
+  ggplot(df_long_acq_fix_duration_log, aes(x = sticsa_total_centred, y = fix_duration_log, 
+                                   colour = iu_group)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Fixation Duration in Acquisition by IU Group",
+       x = "STICSA Total (Centred)", 
+       y = "Acquisition Fixation Duration (Log-Transformed)") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+    labs(colour = "IU Group") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_acq_fix_duration_log_sticsa_centred_by_iu)
+# relationship between STICSA and fixation count appears linear at both levels of IU
+
+# sticsa and stimulus
+scatterplot_acq_fix_duration_log_sticsa_centred_by_stimulus <- 
+  ggplot(df_long_acq_fix_duration_log, aes(x = sticsa_total_centred, y = fix_duration_log, 
+                                   colour = stimulus)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Fixation Duration in Acquisition by Stimulus",
+       x = "STICSA Total (Centred)", 
+       y = "Acquisition Fixation Duration (Log-Transformed)") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("CS-", "CS+")) +
+    labs(colour = "Stimulus") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_acq_fix_duration_log_sticsa_centred_by_stimulus)
+# relationship between STICSA and fixation count appears linear at both levels of stimulus
+
+```
+
+#### *Extinction* ####
+
+```{r linearity covariate and outcome variables fixation duration log ext}
+
+# sticsa and IU group
+scatterplot_ext_fix_duration_log_sticsa_centred_by_iu <- 
+  ggplot(df_long_ext_fix_duration_log, aes(x = sticsa_total_centred, y = fix_duration_log, 
+                                   colour = iu_group)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Fixation Duration in Extinction by IU Group",
+       x = "STICSA Total (Centred)", 
+       y = "Extinction Fixation Duration (Log-Transformed)") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+    labs(colour = "IU Group") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_ext_fix_duration_log_sticsa_centred_by_iu)
+# relationship between STICSA and fixation count appears linear at both levels of IU
+
+# sticsa and stimulus
+scatterplot_ext_fix_duration_log_sticsa_centred_by_stimulus <- 
+  ggplot(df_long_ext_fix_duration_log, aes(x = sticsa_total_centred, y = fix_duration_log, 
+                                   colour = stimulus)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Fixation Duration in Extinction by Stimulus",
+       x = "STICSA Total (Centred)", 
+       y = "Extinction Fixation Duration (Log-Transformed)") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("CS-", "CS+")) +
+    labs(colour = "Stimulus") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_ext_fix_duration_log_sticsa_centred_by_stimulus)
+# relationship between STICSA and fixation count appears linear at both levels of stimulus
+
+# sticsa and time
+scatterplot_ext_fix_duration_log_sticsa_centred_by_time <- 
+  ggplot(df_long_ext_fix_duration_log, aes(x = sticsa_total_centred, y = fix_duration_log, 
+                                   colour = time)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Fixation Duration in Extinction by Time",
+       x = "STICSA Total (Centred)", 
+       y = "Extinction Fixation Duration (Log-Transformed)") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("Late", "Early")) +
+    labs(colour = "Time") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_ext_fix_duration_log_sticsa_centred_by_time)
+# relationship between STICSA and fixation count appears linear at both levels of time
+
+```
+
+### *Saccade Amplitude* ###
+
+#### *Acquisition* ####
+
+```{r linearity covariate and outcome variables sacc amplitude acq}
+
+# sticsa and IU group
+scatterplot_acq_sacc_amplitude_sticsa_centred_by_iu <- 
+  ggplot(df_long_acq_sacc_amplitude, aes(x = sticsa_total_centred, y = sacc_amplitude, 
+                                   colour = iu_group)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Saccade Amplitude in Acquisition by IU Group",
+       x = "STICSA Total (Centred)", 
+       y = "Acquisition Saccade Amplitude") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+    labs(colour = "IU Group") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_acq_sacc_amplitude_sticsa_centred_by_iu)
+# relationship between STICSA and fixation count appears linear at both levels of IU
+
+# sticsa and stimulus
+scatterplot_acq_sacc_amplitude_sticsa_centred_by_stimulus <- 
+  ggplot(df_long_acq_sacc_amplitude, aes(x = sticsa_total_centred, y = sacc_amplitude, 
+                                   colour = stimulus)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Saccade Amplitude  in Acquisition by Stimulus",
+       x = "STICSA Total (Centred)", 
+       y = "Acquisition Saccade Amplitude ") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("CS-", "CS+")) +
+    labs(colour = "Stimulus") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_acq_sacc_amplitude_sticsa_centred_by_stimulus)
+# relationship between STICSA and fixation count appears linear at both levels of stimulus
+
+```
+
+#### *Extinction* ####
+
+```{r linearity covariate and outcome variables sacc amplitude ext}
+
+# sticsa and IU group
+scatterplot_ext_sacc_amplitude_sticsa_centred_by_iu <- 
+  ggplot(df_long_ext_sacc_amplitude, aes(x = sticsa_total_centred, y = sacc_amplitude, 
+                                   colour = iu_group)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Saccade Amplitude in Extinction by IU Group",
+       x = "STICSA Total (Centred)", 
+       y = "Extinction Saccade Amplitude") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("Low IU", "High IU")) +
+    labs(colour = "IU Group") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_ext_sacc_amplitude_sticsa_centred_by_iu)
+# relationship between STICSA and fixation count appears linear at both levels of IU
+# there does appear to be an interaction (with high IU having higher
+# saccde amplitude as levels of trait anxiety increase, and low IU showing
+# opposite pattern)
+
+# sticsa and stimulus
+scatterplot_ext_sacc_amplitude_sticsa_centred_by_stimulus <- 
+  ggplot(df_long_ext_sacc_amplitude, aes(x = sticsa_total_centred, y = sacc_amplitude, 
+                                   colour = stimulus)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Saccade Amplitude  in Extinction by Stimulus",
+       x = "STICSA Total (Centred)", 
+       y = "Extinction Saccade Amplitude ") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("CS-", "CS+")) +
+    labs(colour = "Stimulus") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_ext_sacc_amplitude_sticsa_centred_by_stimulus)
+# relationship between STICSA and fixation count appears linear at both levels of stimulus
+
+# sticsa and time
+scatterplot_ext_sacc_amplitude_sticsa_centred_by_time <- 
+  ggplot(df_long_ext_sacc_amplitude, aes(x = sticsa_total_centred, y = sacc_amplitude, 
+                                   colour = time)) +
+  geom_point() +
+  geom_jitter(width = .5, alpha = .30, size = 2.5) +
+  geom_smooth(method = lm, se = FALSE) +
+  labs(title = "Plot of the Relationship Between Trait Anxiety (Covariate) and 
+  Saccade Amplitude in Extinction by Time",
+       x = "STICSA Total (Centred)", 
+       y = "Extinction Saccade Amplitude ") +
+  theme_classic() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 12)) +
+  theme(text = element_text(family = "serif")) +
+  guides(colour = guide_legend(reverse = TRUE)) +
+  scale_colour_manual(values = c("#c45150", "#824372"), labels = c("Late", "Early")) +
+    labs(colour = "Time") +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) 
+
+print(scatterplot_ext_sacc_amplitude_sticsa_centred_by_time)
+# relationship between STICSA and fixation count appears linear at both levels of time
+
+```
